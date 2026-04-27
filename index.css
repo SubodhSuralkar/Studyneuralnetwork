@@ -1,0 +1,194 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --cyber-cyan: #00f5ff;
+  --cyber-magenta: #ff00ff;
+  --cyber-green: #00ff41;
+  --cyber-yellow: #ffff00;
+  --cyber-dark: #050a0e;
+  --cyber-card: #0a1628;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--cyber-dark);
+  color: #e0f0ff;
+  font-family: 'Exo 2', sans-serif;
+  overflow-x: hidden;
+  cursor: crosshair;
+}
+
+/* Scanline overlay */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 245, 255, 0.015) 2px,
+    rgba(0, 245, 255, 0.015) 4px
+  );
+  pointer-events: none;
+  z-index: 9999;
+}
+
+/* Grid background */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-image: 
+    linear-gradient(rgba(0, 245, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 245, 255, 0.03) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #020508;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--cyber-cyan);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--cyber-cyan);
+}
+
+.neon-text-cyan {
+  color: var(--cyber-cyan);
+  text-shadow: 0 0 10px var(--cyber-cyan), 0 0 20px var(--cyber-cyan), 0 0 40px var(--cyber-cyan);
+}
+
+.neon-text-magenta {
+  color: var(--cyber-magenta);
+  text-shadow: 0 0 10px var(--cyber-magenta), 0 0 20px var(--cyber-magenta);
+}
+
+.neon-text-green {
+  color: var(--cyber-green);
+  text-shadow: 0 0 10px var(--cyber-green), 0 0 20px var(--cyber-green);
+}
+
+.neon-border-cyan {
+  border-color: var(--cyber-cyan);
+  box-shadow: 0 0 8px rgba(0, 245, 255, 0.4), inset 0 0 8px rgba(0, 245, 255, 0.05);
+}
+
+.neon-border-magenta {
+  border-color: var(--cyber-magenta);
+  box-shadow: 0 0 8px rgba(255, 0, 255, 0.4), inset 0 0 8px rgba(255, 0, 255, 0.05);
+}
+
+.neon-border-green {
+  border-color: var(--cyber-green);
+  box-shadow: 0 0 8px rgba(0, 255, 65, 0.4), inset 0 0 8px rgba(0, 255, 65, 0.05);
+}
+
+.card-bg {
+  background: linear-gradient(135deg, #0a1628 0%, #060d1a 100%);
+  border: 1px solid #1a2f4a;
+}
+
+.clip-corner {
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 16px, 100% 100%, 16px 100%, 0 calc(100% - 16px));
+}
+
+.clip-corner-sm {
+  clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+}
+
+@keyframes scanline {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+@keyframes flicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% { opacity: 1; }
+  20%, 24%, 55% { opacity: 0.85; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes data-stream {
+  0% { background-position: 0 0; }
+  100% { background-position: 0 100px; }
+}
+
+@keyframes xp-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0.7); }
+  70% { box-shadow: 0 0 0 10px rgba(0, 255, 65, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(0, 255, 65, 0); }
+}
+
+.xp-pulse {
+  animation: xp-pulse 1s ease-out;
+}
+
+.font-display {
+  font-family: 'Orbitron', sans-serif;
+}
+
+.font-mono {
+  font-family: 'Share Tech Mono', monospace;
+}
+
+input, select {
+  background: transparent;
+}
+
+input::placeholder {
+  color: rgba(0, 245, 255, 0.3);
+}
+
+option {
+  background: #0a1628;
+  color: #e0f0ff;
+}
+
+/* Glitch effect */
+@keyframes glitch {
+  0% { text-shadow: 2px 0 var(--cyber-magenta), -2px 0 var(--cyber-cyan); }
+  25% { text-shadow: -2px 0 var(--cyber-magenta), 2px 0 var(--cyber-cyan); }
+  50% { text-shadow: 2px 2px var(--cyber-magenta), -2px -2px var(--cyber-cyan); }
+  75% { text-shadow: -2px 2px var(--cyber-magenta), 2px -2px var(--cyber-cyan); }
+  100% { text-shadow: 2px 0 var(--cyber-magenta), -2px 0 var(--cyber-cyan); }
+}
+
+.glitch:hover {
+  animation: glitch 0.3s linear infinite;
+}
+
+/* Progress bar glow */
+.progress-glow {
+  box-shadow: 0 0 10px var(--cyber-cyan), 0 0 30px rgba(0, 245, 255, 0.5);
+}
+
+/* Strikethrough animation */
+@keyframes strike {
+  0% { width: 0; }
+  100% { width: 100%; }
+}
+
+.strike-through::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 0;
+  height: 2px;
+  background: var(--cyber-magenta);
+  box-shadow: 0 0 4px var(--cyber-magenta);
+  animation: strike 0.5s ease-out forwards;
+}
