@@ -867,8 +867,21 @@ export default function App() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [vigilanceMode, setVigilanceMode] = useState(() => LS.get('vigilance_mode', false));
 
-  // Mission builder
-  const [form, setForm] = useState({ name: '', subject: 'Physics', diff: 'M', pyqs: 0 });
+  // Mission builder — chapter selected by dropdown, not free text
+  const getDefaultChapter = (subject, completed) => {
+    const available = SYLLABUS[subject].filter(c => !completed.includes(`${subject}::${c.name}`));
+    return available[0] || null;
+  };
+  const [form, setForm] = useState(() => {
+    const saved = LS.get('completed_chapters', []);
+    const defaultChapter = getDefaultChapter('Physics', saved);
+    return {
+      subject: 'Physics',
+      chapterName: defaultChapter?.name || '',
+      diff: defaultChapter?.diff || 'M',
+      pyqs: 0,
+    };
+  });
 
   // Persist
   useEffect(() => { LS.set('completed_chapters', completedChapters); }, [completedChapters]);
@@ -882,12 +895,31 @@ export default function App() {
   const nextRank = RANK_THRESHOLDS.find(r => r.min > totalXP) || RANK_THRESHOLDS[RANK_THRESHOLDS.length - 1];
   const rankPct = Math.min(100, ((totalXP - rank.min) / (Math.max(nextRank.min, rank.min + 1) - rank.min)) * 100);
 
-  // Add mission
+  // Add mission — uses exact chapterName from syllabus
   const addMission = () => {
-    if (!form.name.trim()) return;
-    const newTask = { id: Date.now().toString(), ...form, pyqs: Number(form.pyqs) || 0, createdAt: Date.now() };
+    if (!form.chapterName) return;
+    // Prevent duplicate active missions for same chapter
+    const alreadyQueued = missions.some(m => m.subject === form.subject && m.name === form.chapterName);
+    if (alreadyQueued) return;
+    const newTask = {
+      id: Date.now().toString(),
+      name: form.chapterName,          // exact string from SYLLABUS
+      subject: form.subject,
+      diff: form.diff,
+      pyqs: Number(form.pyqs) || 0,
+      createdAt: Date.now(),
+    };
     setMissions(prev => [newTask, ...prev]);
-    setForm({ name: '', subject: 'Physics', diff: 'M', pyqs: 0 });
+    // Reset: pick next available chapter in same subject
+    const nextAvailable = SYLLABUS[form.subject].find(
+      c => !completedChapters.includes(`${form.subject}::${c.name}`) && c.name !== form.chapterName
+    );
+    setForm(f => ({
+      ...f,
+      chapterName: nextAvailable?.name || '',
+      diff: nextAvailable?.diff || 'M',
+      pyqs: 0,
+    }));
   };
 
   // Ignition — Emergency Micro-Mission
@@ -1056,34 +1088,109 @@ export default function App() {
           </div>
 
           <div className="clip-corner p-5 mb-5" style={{ background: 'linear-gradient(135deg, #0a1628, #060d1a)', border: '1px solid rgba(0,245,255,0.2)' }}>
+            {/* Dropdown row */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+
+              {/* ── Dropdown 1: Subject ── */}
+              <div className="lg:col-span-1">
+                <label className="font-mono text-[10px] text-gray-500 block mb-1 tracking-wider">TARGET SUBJECT</label>
+                <div className="relative">
+                  <select
+                    value={form.subject}
+                    onChange={e => {
+                      const subj = e.target.value;
+                      const firstAvail = SYLLABUS[subj].find(
+                        c => !completedChapters.includes(`${subj}::${c.name}`)
+                      );
+                      setForm(f => ({
+                        ...f,
+                        subject: subj,
+                        chapterName: firstAvail?.name || '',
+                        diff: firstAvail?.diff || 'M',
+                      }));
+                    }}
+                    className="w-full px-3 py-2 font-mono text-sm clip-corner-sm focus:outline-none appearance-none pr-8"
+                    style={{
+                      background: 'rgba(0,245,255,0.06)',
+                      border: `1px solid ${SUBJECT_CONFIG[form.subject]?.color || '#00f5ff'}60`,
+                      color: SUBJECT_CONFIG[form.subject]?.color || '#00f5ff',
+                      boxShadow: `0 0 8px ${SUBJECT_CONFIG[form.subject]?.color || '#00f5ff'}20`,
+                    }}
+                  >
+                    {Object.keys(SYLLABUS).map(s => (
+                      <option key={s} value={s} style={{ background: '#060d1a', color: '#e0f0ff' }}>{s}</option>
+                    ))}
+                  </select>
+                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: SUBJECT_CONFIG[form.subject]?.color || '#00f5ff' }} />
+                </div>
+              </div>
+
+              {/* ── Dropdown 2: Chapter (filtered, pending only) ── */}
               <div className="lg:col-span-2">
-                <label className="font-mono text-[10px] text-gray-500 block mb-1 tracking-wider">CHAPTER NAME</label>
-                <input
-                  type="text"
-                  value={form.name}
-                  onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  onKeyDown={e => e.key === 'Enter' && addMission()}
-                  placeholder="e.g. Rotational Dynamics"
-                  className="w-full px-3 py-2 font-mono text-sm text-white clip-corner-sm focus:outline-none"
-                  style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.2)', color: '#e0f0ff' }}
-                />
+                {(() => {
+                  const availableChapters = SYLLABUS[form.subject].filter(
+                    c => !completedChapters.includes(`${form.subject}::${c.name}`)
+                  );
+                  const alreadyQueued = missions.filter(m => m.subject === form.subject && !m.isMicro).map(m => m.name);
+                  return (
+                    <>
+                      <label className="font-mono text-[10px] text-gray-500 block mb-1 tracking-wider">
+                        TARGET CHAPTER
+                        <span className="ml-2 text-gray-700">({availableChapters.length} remaining)</span>
+                      </label>
+                      <div className="relative">
+                        {availableChapters.length === 0 ? (
+                          <div
+                            className="w-full px-3 py-2 font-mono text-xs clip-corner-sm"
+                            style={{ background: 'rgba(0,255,65,0.05)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}
+                          >
+                            ✓ ALL CHAPTERS ANNIHILATED
+                          </div>
+                        ) : (
+                          <select
+                            value={form.chapterName}
+                            onChange={e => {
+                              const ch = SYLLABUS[form.subject].find(c => c.name === e.target.value);
+                              setForm(f => ({ ...f, chapterName: e.target.value, diff: ch?.diff || f.diff }));
+                            }}
+                            className="w-full px-3 py-2 font-mono text-sm clip-corner-sm focus:outline-none appearance-none pr-8"
+                            style={{
+                              background: 'rgba(0,245,255,0.05)',
+                              border: '1px solid rgba(0,245,255,0.25)',
+                              color: '#e0f0ff',
+                            }}
+                          >
+                            {availableChapters.map(c => {
+                              const queued = alreadyQueued.includes(c.name);
+                              return (
+                                <option
+                                  key={c.name}
+                                  value={c.name}
+                                  style={{ background: '#060d1a', color: queued ? '#4a6080' : '#e0f0ff' }}
+                                >
+                                  {queued ? `⟳ ${c.name} (queued)` : `${c.name}`}
+                                </option>
+                              );
+                            })}
+                          </select>
+                        )}
+                        {availableChapters.length > 0 && (
+                          <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
               </div>
+
+              {/* ── Difficulty (auto-set from syllabus, still manually overrideable) ── */}
               <div>
-                <label className="font-mono text-[10px] text-gray-500 block mb-1 tracking-wider">SUBJECT</label>
-                <select
-                  value={form.subject}
-                  onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
-                  className="w-full px-3 py-2 font-mono text-sm clip-corner-sm focus:outline-none"
-                  style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.2)', color: '#e0f0ff' }}
-                >
-                  <option>Physics</option>
-                  <option>Chemistry</option>
-                  <option>Mathematics</option>
-                </select>
-              </div>
-              <div>
-                <label className="font-mono text-[10px] text-gray-500 block mb-1 tracking-wider">DIFFICULTY</label>
+                <label className="font-mono text-[10px] text-gray-500 block mb-1 tracking-wider">
+                  DIFFICULTY
+                  {form.chapterName && SYLLABUS[form.subject]?.find(c => c.name === form.chapterName) && (
+                    <span className="ml-1 text-gray-700">(auto)</span>
+                  )}
+                </label>
                 <div className="flex gap-1.5">
                   {['E', 'M', 'H'].map(d => {
                     const dc = DIFF_CONFIG[d];
@@ -1113,8 +1220,15 @@ export default function App() {
                   />
                   <button
                     onClick={addMission}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 font-display text-xs font-black tracking-wider clip-corner-sm"
-                    style={{ background: 'rgba(0,245,255,0.15)', border: '1px solid rgba(0,245,255,0.6)', color: '#00f5ff', boxShadow: '0 0 12px rgba(0,245,255,0.2)' }}
+                    disabled={!form.chapterName}
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 font-display text-xs font-black tracking-wider clip-corner-sm transition-all"
+                    style={{
+                      background: form.chapterName ? 'rgba(0,245,255,0.15)' : 'rgba(20,30,40,0.4)',
+                      border: `1px solid ${form.chapterName ? 'rgba(0,245,255,0.6)' : 'rgba(0,245,255,0.1)'}`,
+                      color: form.chapterName ? '#00f5ff' : '#2a4a5a',
+                      boxShadow: form.chapterName ? '0 0 12px rgba(0,245,255,0.2)' : 'none',
+                      cursor: form.chapterName ? 'pointer' : 'not-allowed',
+                    }}
                   >
                     <Plus size={14} /> DEPLOY
                   </button>
