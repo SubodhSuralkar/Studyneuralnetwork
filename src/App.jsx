@@ -6,33 +6,34 @@ import {
   ChevronDown, Plus, Trash2, Play, Pause, RotateCcw,
   Award, AlertTriangle, BookOpen, Atom, FlaskConical,
   Calculator, X, Flame, Radio, Skull, Eye, EyeOff,
-  FolderOpen, Download, Archive,
+  FolderOpen, Download, Archive, Lock, Star, Cpu,
+  Activity, TrendingUp, Wifi, WifiOff,
 } from 'lucide-react';
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 1 — CONSTANTS  (module scope — zero hoisting issues)
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 1 — CONSTANTS (ALL defined at module scope, above everything)
+// ═══════════════════════════════════════════════════════════════════
 
 const SYLLABUS = {
   Physics: [
+    { name: 'Structure of Atom',          diff: 'E' },
     { name: 'Rotational Dynamics',        diff: 'H' },
     { name: 'Kinetic Theory of Gases',    diff: 'M' },
     { name: 'Wave Optics',                diff: 'H' },
     { name: 'Dual Nature of Radiation',   diff: 'M' },
-    { name: 'Structure of Atom',          diff: 'E' },
     { name: 'Semiconductors',             diff: 'E' },
   ],
   Chemistry: [
-    { name: 'Solutions',                    diff: 'H' },
-    { name: 'Electrochemistry',             diff: 'H' },
-    { name: 'Halogen Derivatives',          diff: 'E' },
+    { name: 'Atomic Structure',           diff: 'E' },
+    { name: 'Basic Concepts of Chemistry',diff: 'E' },
+    { name: 'Chemical Thermodynamics',    diff: 'M' },
+    { name: 'Solutions',                  diff: 'H' },
+    { name: 'Electrochemistry',           diff: 'H' },
+    { name: 'Ionic Equilibrium',          diff: 'H' },
+    { name: 'Halogen Derivatives',        diff: 'E' },
     { name: 'Alcohols, Phenols and Ethers', diff: 'M' },
-    { name: 'Ionic Equilibrium',            diff: 'H' },
-    { name: 'Amines',                       diff: 'M' },
-    { name: 'Transition Elements',          diff: 'E' },
-    { name: 'Basic Concepts of Chemistry',  diff: 'E' },
-    { name: 'Atomic Structure',             diff: 'E' },
-    { name: 'Chemical Thermodynamics',      diff: 'M' },
+    { name: 'Amines',                     diff: 'M' },
+    { name: 'Transition Elements',        diff: 'E' },
   ],
   Mathematics: [
     { name: 'Pair of Lines',               diff: 'M' },
@@ -43,14 +44,102 @@ const SYLLABUS = {
   ],
 };
 
-const TOTAL_CHAPTERS    = Object.values(SYLLABUS).flat().length;
-const XP_MAP            = { H: 500, M: 300, E: 150 };
-const HOURS_MAP         = { H: 5,   M: 3,   E: 1.5 };
-const POMODORO_WORK     = 25 * 60;
-const POMODORO_BREAK    = 5  * 60;
-const COMBO_WINDOW_MS   = 4  * 60 * 1000;
-const VIGILANCE_IDLE_MS = 10 * 60 * 1000;
-const COMBO_MULTIPLIERS = [1, 2, 5, 10, 20, 50];
+// ── Season 1 Episodes: 7 episodes × 3 chapters ──────────────────────────────
+// Each episode has chapters from across subjects, grouped for dramatic reveal.
+// Episodes unlock sequentially when the prior episode reaches 100% completion.
+const EPISODES = [
+  {
+    id: 1,
+    title: 'The Atomic Awakening',
+    subtitle: 'Season Premiere',
+    color: '#00f5ff',
+    chapters: [
+      { subject: 'Physics',     name: 'Structure of Atom'           },
+      { subject: 'Chemistry',   name: 'Atomic Structure'            },
+      { subject: 'Chemistry',   name: 'Basic Concepts of Chemistry' },
+    ],
+  },
+  {
+    id: 2,
+    title: 'Thermodynamic Reckoning',
+    subtitle: 'The Heat Protocol',
+    color: '#ff6b00',
+    chapters: [
+      { subject: 'Chemistry',   name: 'Chemical Thermodynamics'     },
+      { subject: 'Physics',     name: 'Kinetic Theory of Gases'     },
+      { subject: 'Mathematics', name: 'Pair of Lines'               },
+    ],
+  },
+  {
+    id: 3,
+    title: 'Equilibrium & Chaos',
+    subtitle: 'The Balance Breaks',
+    color: '#ff00ff',
+    chapters: [
+      { subject: 'Chemistry',   name: 'Ionic Equilibrium'           },
+      { subject: 'Chemistry',   name: 'Solutions'                   },
+      { subject: 'Mathematics', name: 'Line & Plane'                },
+    ],
+  },
+  {
+    id: 4,
+    title: 'Electrochemical Storm',
+    subtitle: 'Current Wars',
+    color: '#ffff00',
+    chapters: [
+      { subject: 'Chemistry',   name: 'Electrochemistry'            },
+      { subject: 'Physics',     name: 'Semiconductors'              },
+      { subject: 'Physics',     name: 'Rotational Dynamics'         },
+    ],
+  },
+  {
+    id: 5,
+    title: 'Derivatives of Destruction',
+    subtitle: 'Calculus Apocalypse',
+    color: '#00ff41',
+    chapters: [
+      { subject: 'Mathematics', name: 'Differentiation'             },
+      { subject: 'Mathematics', name: 'Applications of Derivatives' },
+      { subject: 'Physics',     name: 'Wave Optics'                 },
+    ],
+  },
+  {
+    id: 6,
+    title: 'Organic Uprising',
+    subtitle: 'Carbon Strikes Back',
+    color: '#7fff00',
+    chapters: [
+      { subject: 'Chemistry',   name: 'Halogen Derivatives'         },
+      { subject: 'Chemistry',   name: 'Alcohols, Phenols and Ethers'},
+      { subject: 'Chemistry',   name: 'Amines'                      },
+    ],
+  },
+  {
+    id: 7,
+    title: 'The Final Nexus',
+    subtitle: 'Season Finale',
+    color: '#ffa500',
+    chapters: [
+      { subject: 'Chemistry',   name: 'Transition Elements'         },
+      { subject: 'Physics',     name: 'Dual Nature of Radiation'    },
+      { subject: 'Mathematics', name: 'Differential Equations'      },
+    ],
+  },
+];
+
+const TOTAL_CHAPTERS     = Object.values(SYLLABUS).flat().length;
+const XP_MAP             = { H: 500, M: 300, E: 150 };
+const HOURS_MAP          = { H: 5,   M: 3,   E: 1.5 };
+const POMODORO_WORK      = 25 * 60;
+const POMODORO_BREAK     = 5  * 60;
+const COMBO_WINDOW_MS    = 4  * 60 * 1000;
+const VIGILANCE_IDLE_MS  = 10 * 60 * 1000;
+const COMBO_MULTIPLIERS  = [1, 2, 5, 10, 20, 50];
+// Loss-aversion: decay fires every 30 min if no pomodoro started in 1hr
+const INTEGRITY_DECAY_INTERVAL_MS = 30 * 60 * 1000;
+const INTEGRITY_IDLE_THRESHOLD_MS = 60 * 60 * 1000;
+const INTEGRITY_DECAY_AMOUNT      = 15;
+const INTEGRITY_RESTORE_AMOUNT    = 20;
 
 const DIFF_CONFIG = {
   H: { label: 'BOSS BATTLE', color: '#ff00ff', bg: 'rgba(255,0,255,0.1)',  icon: Sword  },
@@ -61,9 +150,9 @@ const DIFF_CONFIG = {
 const DIFF_LABELS_PRINT = { H: 'BOSS', M: 'ELITE', E: 'MINION' };
 
 const SUBJECT_CONFIG = {
-  Physics:     { color: '#00f5ff', icon: Atom,         label: 'PHYSICS'     },
-  Chemistry:   { color: '#ff00ff', icon: FlaskConical,  label: 'CHEMISTRY'   },
-  Mathematics: { color: '#00ff41', icon: Calculator,    label: 'MATHEMATICS' },
+  Physics:     { color: '#00f5ff', icon: Atom,        label: 'PHYSICS',     stat: 'strength'     },
+  Chemistry:   { color: '#ff00ff', icon: FlaskConical, label: 'CHEMISTRY',  stat: 'dexterity'    },
+  Mathematics: { color: '#00ff41', icon: Calculator,   label: 'MATHEMATICS', stat: 'intelligence' },
 };
 
 const SUBJECT_PRINT_COLORS = {
@@ -86,13 +175,45 @@ const TIMER_PRESETS = [
   { label: '120m', seconds: 120 * 60 },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ── RPG Level thresholds ─────────────────────────────────────────────────────
+const LEVEL_THRESHOLDS = [
+  0, 200, 500, 900, 1400,          // Levels 1-5  → Dim Mode
+  2000, 2800, 3700, 4700, 5800,   // Levels 6-10
+  7100, 8600, 10300, 12200, 14300, // Levels 11-15 → Neon Overload
+  16700, 19400, 22400, 25700, 99999, // Levels 16+ → God Mode
+];
+
+// ═══════════════════════════════════════════════════════════════════
 // SECTION 2 — PURE HELPERS
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 
 function getRank(xp) {
   const found = [...RANK_THRESHOLDS].reverse().find((r) => xp >= r.min);
   return found || RANK_THRESHOLDS[0];
+}
+
+function getUserLevel(xp) {
+  let level = 1;
+  for (let i = 0; i < LEVEL_THRESHOLDS.length; i++) {
+    if (xp >= LEVEL_THRESHOLDS[i]) level = i + 1;
+    else break;
+  }
+  return Math.min(level, LEVEL_THRESHOLDS.length);
+}
+
+function getLevelProgress(xp) {
+  const level = getUserLevel(xp);
+  const currentThreshold = LEVEL_THRESHOLDS[level - 1] || 0;
+  const nextThreshold    = LEVEL_THRESHOLDS[level]     || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
+  const progress = ((xp - currentThreshold) / Math.max(nextThreshold - currentThreshold, 1)) * 100;
+  return Math.min(100, Math.max(0, progress));
+}
+
+// Returns the visual theme tier based on user level
+function getSystemTheme(level) {
+  if (level >= 16) return 'god';
+  if (level >= 6)  return 'neon';
+  return 'dim';
 }
 
 const LS = {
@@ -118,6 +239,14 @@ function fireConfetti(diff) {
   confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 }, colors, scalar: 1.2 });
   setTimeout(() => confetti({ particleCount: 60, angle: 120, spread: 60, origin: { x: 0 }, colors }), 300);
   setTimeout(() => confetti({ particleCount: 60, angle: 60,  spread: 60, origin: { x: 1 }, colors }), 450);
+}
+
+function fireGodModeConfetti() {
+  const colors = ['#ffd700', '#ffa500', '#ffff00', '#fff8dc', '#fffacd'];
+  confetti({ particleCount: 250, spread: 120, origin: { y: 0.4 }, colors, scalar: 1.8 });
+  setTimeout(() => confetti({ particleCount: 100, angle: 115, spread: 80, origin: { x: 0 }, colors }), 200);
+  setTimeout(() => confetti({ particleCount: 100, angle: 65,  spread: 80, origin: { x: 1 }, colors }), 350);
+  setTimeout(() => confetti({ particleCount: 80,  spread: 140, origin: { y: 0.2 }, colors }), 500);
 }
 
 function fireNeuralConfetti() {
@@ -162,9 +291,51 @@ function playComboShatter() {
   } catch {}
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// Returns CSS string for the glitch animation based on integrity level
+function getGlitchStyles(integrity) {
+  if (integrity >= 50) return '';
+  const intensity = (50 - integrity) / 50; // 0 → 1 as integrity 50 → 0
+  const shakeAmt  = Math.round(intensity * 4);
+  const scanOpacity = (intensity * 0.12).toFixed(3);
+  return `
+    @keyframes glitch-shake {
+      0%, 100% { transform: translate(0, 0) skewX(0); }
+      10% { transform: translate(-${shakeAmt}px, 1px) skewX(-${intensity}deg); }
+      20% { transform: translate(${shakeAmt}px, -1px) skewX(${intensity * 0.5}deg); }
+      30% { transform: translate(-${Math.round(shakeAmt * 0.6)}px, 0) skewX(0); }
+      40% { transform: translate(${Math.round(shakeAmt * 0.8)}px, 1px) skewX(${intensity * 0.3}deg); }
+      50% { transform: translate(0, 0) skewX(0); }
+    }
+    @keyframes scanline-drift {
+      0%   { transform: translateY(-100%); }
+      100% { transform: translateY(100vh); }
+    }
+    .glitch-scanlines::after {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9990;
+      background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(255, 0, 0, ${scanOpacity}) 2px,
+        rgba(255, 0, 0, ${scanOpacity}) 4px
+      );
+    }
+    .glitch-body {
+      animation: glitch-shake ${Math.max(0.3, 1 - intensity * 0.6).toFixed(2)}s ease-in-out infinite;
+    }
+    .glitch-color-shift {
+      filter: hue-rotate(${Math.round(intensity * 30)}deg) saturate(${1 + intensity * 0.5});
+    }
+  `;
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SECTION 3 — CUSTOM HOOKS
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 
 function useVelocityCombo(missionId) {
   const [comboLevel,   setComboLevel]   = useState(0);
@@ -197,11 +368,12 @@ function useVelocityCombo(missionId) {
   return { comboLevel, solvedCount, currentMultiplier, incrementSolved, comboExpired };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 // SECTION 4 — SMALL / STATELESS UI COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 
-function XPFloatAnimation({ xpAmount, hasVelocityBonus, onAnimationDone }) {
+function XPFloatAnimation({ xpAmount, hasVelocityBonus, onAnimationDone, theme }) {
+  const goldMode = theme === 'god';
   return (
     <motion.div
       initial={{ opacity: 1, y: 0, scale: 0.8 }}
@@ -212,13 +384,18 @@ function XPFloatAnimation({ xpAmount, hasVelocityBonus, onAnimationDone }) {
     >
       <div style={{
         fontFamily: 'monospace',
-        color:      hasVelocityBonus ? '#ffff00' : '#00ff41',
-        textShadow: `0 0 20px ${hasVelocityBonus ? '#ffff00' : '#00ff41'}`,
+        color:      goldMode ? '#ffd700' : (hasVelocityBonus ? '#ffff00' : '#00ff41'),
+        textShadow: `0 0 20px ${goldMode ? '#ffd700' : (hasVelocityBonus ? '#ffff00' : '#00ff41')}`,
         fontSize:   36, fontWeight: 900,
       }}>+{xpAmount} XP</div>
       {hasVelocityBonus && (
         <div style={{ fontFamily: 'monospace', color: '#ff6b00', textShadow: '0 0 15px #ff6b00', fontSize: 18, fontWeight: 700 }}>
           ⚡ VELOCITY BONUS!
+        </div>
+      )}
+      {goldMode && (
+        <div style={{ fontFamily: 'monospace', color: '#ffd700', textShadow: '0 0 15px #ffd700', fontSize: 14, fontWeight: 700 }}>
+          ✦ GOD MODE BONUS ✦
         </div>
       )}
     </motion.div>
@@ -312,10 +489,307 @@ function IgnitionSwitch({ onIgnite }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// SECTION 5 — COMPLEX COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
+// ── SystemIntegrityBar: Loss Aversion visual ─────────────────────────────────
+function SystemIntegrityBar({ integrity }) {
+  const color =
+    integrity >= 75 ? '#00ff41' :
+    integrity >= 50 ? '#ffff00' :
+    integrity >= 25 ? '#ff6b00' : '#ff0000';
+  const label =
+    integrity >= 75 ? 'STABLE'   :
+    integrity >= 50 ? 'DEGRADED' :
+    integrity >= 25 ? 'CRITICAL' : 'FAILING';
 
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex items-center gap-1.5">
+        {integrity >= 50 ? <Wifi size={11} color={color} /> : (
+          <motion.div animate={{ opacity: [1, 0.2, 1] }} transition={{ repeat: Infinity, duration: 0.7 }}>
+            <WifiOff size={11} color={color} />
+          </motion.div>
+        )}
+        <span className="font-mono tracking-widest" style={{ color, fontSize: 9 }}>SYS INTEGRITY</span>
+      </div>
+      <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
+        <motion.div
+          className="h-full rounded-full"
+          style={{ background: color, boxShadow: `0 0 6px ${color}` }}
+          animate={{ width: `${integrity}%` }}
+          transition={{ duration: 0.8 }}
+        />
+      </div>
+      <span className="font-mono" style={{ color, fontSize: 9 }}>{Math.round(integrity)}% {label}</span>
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 5 — COMPLEX COMPONENTS
+// ═══════════════════════════════════════════════════════════════════
+
+// ── AvatarStatsCard (RPG Stats) ──────────────────────────────────────────────
+function AvatarStatsCard({ stats, totalXP, theme }) {
+  const level     = getUserLevel(totalXP);
+  const lvlProg   = getLevelProgress(totalXP);
+  const rank      = getRank(totalXP);
+
+  const themeStyles = {
+    dim: {
+      border: '1px solid rgba(100,100,120,0.4)',
+      background: 'linear-gradient(135deg, #0a0a12, #050508)',
+      titleColor: '#8888aa',
+      accentColor: '#8888aa',
+      glow: 'none',
+    },
+    neon: {
+      border: '1px solid rgba(0,245,255,0.4)',
+      background: 'linear-gradient(135deg, #0a1628, #060d1a)',
+      titleColor: '#00f5ff',
+      accentColor: '#ff00ff',
+      glow: '0 0 20px rgba(0,245,255,0.2)',
+    },
+    god: {
+      border: '2px solid rgba(255,215,0,0.8)',
+      background: 'linear-gradient(135deg, #1a1200, #0d0900)',
+      titleColor: '#ffd700',
+      accentColor: '#ffa500',
+      glow: '0 0 30px rgba(255,215,0,0.4), 0 0 60px rgba(255,165,0,0.2)',
+    },
+  };
+
+  const ts = themeStyles[theme] || themeStyles.neon;
+
+  const statDefs = [
+    { key: 'strength',     label: 'STR',  fullLabel: 'STRENGTH',     desc: 'Physics XP',     color: '#00f5ff', icon: Atom        },
+    { key: 'dexterity',    label: 'DEX',  fullLabel: 'DEXTERITY',    desc: 'Chemistry XP',   color: '#ff00ff', icon: FlaskConical },
+    { key: 'intelligence', label: 'INT',  fullLabel: 'INTELLIGENCE', desc: 'Math XP',         color: '#00ff41', icon: Calculator  },
+  ];
+
+  // Find max stat for bar scaling
+  const maxStat = Math.max(...statDefs.map(s => stats[s.key] || 0), 1);
+
+  return (
+    <motion.div
+      layout
+      style={{ ...ts, boxShadow: ts.glow }}
+      className="p-5 relative overflow-hidden"
+    >
+      {/* God Mode particle shimmer */}
+      {theme === 'god' && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          animate={{ opacity: [0.04, 0.12, 0.04] }}
+          transition={{ repeat: Infinity, duration: 2.5 }}
+          style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(255,215,0,0.3), transparent 70%)' }}
+        />
+      )}
+
+      <div className="relative z-10">
+        {/* Header row */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 flex items-center justify-center relative"
+              style={{ background: ts.background, border: `2px solid ${ts.titleColor}`, boxShadow: `0 0 12px ${ts.titleColor}60` }}>
+              <Cpu size={18} style={{ color: ts.titleColor }} />
+              {theme === 'god' && (
+                <motion.div
+                  className="absolute -inset-0.5 rounded-none pointer-events-none"
+                  animate={{ opacity: [0.4, 1, 0.4] }}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                  style={{ border: `1px solid ${ts.titleColor}`, boxShadow: `0 0 8px ${ts.titleColor}` }}
+                />
+              )}
+            </div>
+            <div>
+              <div className="font-mono text-xs tracking-widest font-black" style={{ color: ts.titleColor, textShadow: `0 0 8px ${ts.titleColor}` }}>
+                {theme === 'god' ? '✦ CYBER AVATAR ✦' : 'CYBER AVATAR'}
+              </div>
+              <div className="font-mono text-gray-500" style={{ fontSize: 10 }}>
+                {theme === 'dim' ? 'SYSTEM OFFLINE' : theme === 'neon' ? 'NEON OVERLOAD ACTIVE' : 'GOD MODE UNLOCKED'}
+              </div>
+            </div>
+          </div>
+          <div className="text-right">
+            <div className="font-mono font-black text-2xl" style={{ color: ts.titleColor, textShadow: `0 0 12px ${ts.titleColor}` }}>LVL {level}</div>
+            <div className="font-mono text-gray-500" style={{ fontSize: 9 }}>{rank.rank}</div>
+          </div>
+        </div>
+
+        {/* Level progress bar */}
+        <div className="mb-4">
+          <div className="flex justify-between items-center mb-1">
+            <span className="font-mono" style={{ color: ts.accentColor, fontSize: 9 }}>LEVEL PROGRESS</span>
+            <span className="font-mono" style={{ color: ts.accentColor, fontSize: 9 }}>{Math.round(lvlProg)}%</span>
+          </div>
+          <div className="h-2 rounded-full overflow-hidden" style={{ background: '#111' }}>
+            <motion.div className="h-full rounded-full"
+              style={{ background: theme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : `linear-gradient(90deg, ${ts.titleColor}, ${ts.accentColor})`, boxShadow: `0 0 8px ${ts.titleColor}` }}
+              animate={{ width: `${lvlProg}%` }} transition={{ duration: 1 }}
+            />
+          </div>
+        </div>
+
+        {/* Stat bars */}
+        <div className="space-y-2.5">
+          {statDefs.map(({ key, label, fullLabel, desc, color, icon: Icon }) => {
+            const val   = stats[key] || 0;
+            const pct   = (val / Math.max(maxStat, 1)) * 100;
+            return (
+              <div key={key} className="flex items-center gap-3">
+                <Icon size={12} style={{ color, flexShrink: 0 }} />
+                <div className="w-8 font-mono text-xs font-black" style={{ color }}>{label}</div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center mb-0.5">
+                    <span className="font-mono" style={{ color: '#4a6080', fontSize: 8 }}>{fullLabel} ({desc})</span>
+                    <span className="font-mono" style={{ color, fontSize: 8 }}>{val} XP</span>
+                  </div>
+                  <div className="h-1.5 rounded-full overflow-hidden" style={{ background: '#0a1020' }}>
+                    <motion.div className="h-full rounded-full"
+                      style={{ background: color, boxShadow: `0 0 4px ${color}` }}
+                      animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }}
+                    />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Theme tier badge */}
+        <div className="mt-4 flex items-center gap-2">
+          <div className="flex items-center gap-1.5 px-2 py-1" style={{
+            background: theme === 'god' ? 'rgba(255,215,0,0.1)' : theme === 'neon' ? 'rgba(0,245,255,0.08)' : 'rgba(80,80,100,0.08)',
+            border: `1px solid ${ts.titleColor}40`,
+          }}>
+            <Star size={9} style={{ color: ts.titleColor }} />
+            <span className="font-mono font-black" style={{ color: ts.titleColor, fontSize: 9 }}>
+              {theme === 'god' ? '⚡ GOD MODE (LVL 16+)' : theme === 'neon' ? 'NEON OVERLOAD (LVL 6+)' : 'DIM MODE (LVL 1-5)'}
+            </span>
+          </div>
+          {theme === 'god' && (
+            <motion.div animate={{ opacity: [0.5, 1, 0.5] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+              <span className="font-mono" style={{ color: '#ffd700', fontSize: 9 }}>✦ MAX POWER ✦</span>
+            </motion.div>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── Episode Roadmap Card ─────────────────────────────────────────────────────
+function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, deployedNames }) {
+  const episodeChapterKeys = episode.chapters.map(c => `${c.subject}::${c.name}`);
+  const completedInEpisode = episodeChapterKeys.filter(k => completedChapters.includes(k)).length;
+  const totalInEpisode     = episode.chapters.length;
+  const isComplete         = completedInEpisode === totalInEpisode;
+  const pct                = (completedInEpisode / totalInEpisode) * 100;
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="relative overflow-hidden"
+      style={{
+        background: isLocked
+          ? 'linear-gradient(135deg, rgba(10,10,16,0.95), rgba(5,5,10,0.95))'
+          : `linear-gradient(135deg, rgba(10,18,30,0.95), rgba(6,10,18,0.95))`,
+        border: isLocked
+          ? '1px solid rgba(50,50,70,0.4)'
+          : `1px solid ${episode.color}40`,
+        boxShadow: isComplete
+          ? `0 0 20px ${episode.color}30`
+          : 'none',
+        filter: isLocked ? 'blur(1px)' : 'none',
+      }}
+    >
+      {/* Lock overlay */}
+      {isLocked && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center"
+          style={{ background: 'rgba(5,5,12,0.7)', backdropFilter: 'blur(3px)' }}>
+          <Lock size={22} style={{ color: 'rgba(100,100,140,0.6)' }} />
+          <div className="font-mono text-xs text-gray-700 mt-2 tracking-widest">LOCKED</div>
+          <div className="font-mono text-gray-800 mt-0.5" style={{ fontSize: 9 }}>Complete Ep {episode.id - 1} to unlock</div>
+        </div>
+      )}
+
+      {/* Episode header */}
+      <div className="px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${episode.color}20` }}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div className="font-mono font-black" style={{ color: episode.color, fontSize: 9 }}>EPISODE {episode.id}</div>
+            <div className="font-mono text-gray-700" style={{ fontSize: 9 }}>{episode.subtitle}</div>
+          </div>
+          {isComplete && (
+            <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ repeat: Infinity, duration: 2 }}>
+              <CheckCircle size={14} style={{ color: episode.color }} />
+            </motion.div>
+          )}
+        </div>
+        <div className="font-mono text-sm font-black" style={{
+          color: isLocked ? 'rgba(80,80,100,0.5)' : episode.color,
+          textShadow: isLocked ? 'none' : `0 0 10px ${episode.color}60`,
+        }}>{episode.title}</div>
+
+        {/* Progress bar */}
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: '#0a1020' }}>
+            <motion.div className="h-full rounded-full"
+              style={{ background: episode.color, boxShadow: `0 0 4px ${episode.color}` }}
+              animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }}
+            />
+          </div>
+          <span className="font-mono" style={{ color: episode.color, fontSize: 9 }}>{completedInEpisode}/{totalInEpisode}</span>
+        </div>
+      </div>
+
+      {/* Chapter list */}
+      <div className="px-3 py-2 space-y-1">
+        {episode.chapters.map((ch, idx) => {
+          const key         = `${ch.subject}::${ch.name}`;
+          const isCompleted = completedChapters.includes(key);
+          const isDeployed  = deployedNames.some(d => d.subject === ch.subject && d.name === ch.name);
+          const sc          = SUBJECT_CONFIG[ch.subject];
+          const dc          = DIFF_CONFIG[SYLLABUS[ch.subject]?.find(s => s.name === ch.name)?.diff || 'M'];
+          const SubIcon     = sc?.icon || BookOpen;
+
+          return (
+            <motion.div key={ch.name} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: idx * 0.05 }}
+              className="flex items-center gap-2 py-1.5 px-2 rounded"
+              style={{ background: isCompleted ? 'rgba(0,0,0,0.3)' : 'transparent', opacity: isLocked ? 0 : 1 }}>
+              {isCompleted ? (
+                <CheckCircle size={11} style={{ color: '#00ff41', flexShrink: 0 }} />
+              ) : (
+                <div style={{ width: 11, height: 11, flexShrink: 0, border: `1px solid ${dc.color}`, borderRadius: '50%' }} />
+              )}
+              <SubIcon size={10} style={{ color: sc?.color, flexShrink: 0 }} />
+              <span className="text-xs flex-1 font-mono" style={{
+                color: isCompleted ? '#3a5060' : '#c0d8f0',
+                textDecoration: isCompleted ? 'line-through' : 'none',
+                textDecorationColor: '#ff00ff',
+              }}>{ch.name}</span>
+              <span className="font-mono" style={{ color: sc?.color, fontSize: 8 }}>{ch.subject.slice(0,3).toUpperCase()}</span>
+              {!isCompleted && !isDeployed && !isLocked && (
+                <motion.button
+                  whileTap={{ scale: 0.88 }}
+                  onClick={() => onDeployChapter(ch)}
+                  className="px-1.5 py-0.5 font-mono font-black"
+                  style={{ background: `${episode.color}18`, border: `1px solid ${episode.color}60`, color: episode.color, fontSize: 8 }}
+                >+ADD</motion.button>
+              )}
+              {isDeployed && !isCompleted && (
+                <span className="font-mono" style={{ color: '#4a8060', fontSize: 8 }}>QUEUED</span>
+              )}
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
+// ── VigilanceOverlay ─────────────────────────────────────────────────────────
 function VigilanceOverlay({ countdown, onResync }) {
   const isUrgent = countdown < 20;
   return (
@@ -353,7 +827,7 @@ function VigilanceOverlay({ countdown, onResync }) {
   );
 }
 
-// ── LiveTimeDisplay ────────────────────────────────────────────────────────────
+// ── LiveTimeDisplay ───────────────────────────────────────────────────────────
 function LiveTimeDisplay({ taskId, isRunning, sessionStartRef }) {
   const [displaySeconds, setDisplaySeconds] = useState(0);
   useEffect(() => {
@@ -376,26 +850,11 @@ function LiveTimeDisplay({ taskId, isRunning, sessionStartRef }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// FIX 1: TimerModal — purely a display layer for top-level timer state
-// The modal receives all state and callbacks from App; it does NOT own the tick.
-// Closing the modal never stops the timer.
-// ─────────────────────────────────────────────────────────────────────────────
-
+// ── TimerModal ────────────────────────────────────────────────────────────────
 function TimerModal({
-  task,
-  onClose,
-  /* top-level timer props */
-  timerSecondsLeft,
-  timerTotalSeconds,
-  timerIsRunning,
-  timerIsBreak,
-  timerCompletedSessions,
-  onToggleTimer,
-  onAbortTimer,
-  onApplyPreset,
-  onApplyCustomMinutes,
-  vigilanceMode,
+  task, onClose,
+  timerSecondsLeft, timerTotalSeconds, timerIsRunning, timerIsBreak, timerCompletedSessions,
+  onToggleTimer, onAbortTimer, onApplyPreset, onApplyCustomMinutes, vigilanceMode,
 }) {
   const [customMinuteInput,  setCustomMinuteInput]  = useState('');
   const [showVigilance,      setShowVigilance]       = useState(false);
@@ -403,13 +862,10 @@ function TimerModal({
   const lastActivityRef      = useRef(Date.now());
   const vigilanceIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
-  // We need a ref to sessionStartRef for LiveTimeDisplay, but time tracking lives in App.
-  // Pass a dummy ref that is always null; LiveTimeDisplay only shows saved time in modal context.
-  const dummySessionRef = useRef(null);
+  const dummySessionRef      = useRef(null);
 
   const recordActivity = () => { lastActivityRef.current = Date.now(); };
 
-  // Vigilance idle monitor — only active when timer is running AND modal is open
   useEffect(() => {
     if (!vigilanceMode || !timerIsRunning) {
       clearInterval(vigilanceIntervalRef.current);
@@ -426,7 +882,7 @@ function TimerModal({
           setVigilanceCountdown((prev) => {
             if (prev <= 1) {
               clearInterval(countdownIntervalRef.current);
-              onAbortTimer();          // abort at app level
+              onAbortTimer();
               setShowVigilance(false);
               return 60;
             }
@@ -456,12 +912,12 @@ function TimerModal({
     setCustomMinuteInput('');
   };
 
-  const diffConfig      = DIFF_CONFIG[task.diff];
-  const minuteDisplay   = String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0');
-  const secondDisplay   = String(timerSecondsLeft % 60).padStart(2, '0');
-  const progressFill    = ((timerTotalSeconds - timerSecondsLeft) / timerTotalSeconds) * 100;
-  const circumference   = 2 * Math.PI * 90;
-  const strokeOffset    = circumference - (progressFill / 100) * circumference;
+  const diffConfig    = DIFF_CONFIG[task.diff];
+  const minuteDisplay = String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0');
+  const secondDisplay = String(timerSecondsLeft % 60).padStart(2, '0');
+  const progressFill  = ((timerTotalSeconds - timerSecondsLeft) / timerTotalSeconds) * 100;
+  const circumference = 2 * Math.PI * 90;
+  const strokeOffset  = circumference - (progressFill / 100) * circumference;
 
   return (
     <motion.div
@@ -485,12 +941,10 @@ function TimerModal({
           padding: 40, minWidth: 420,
         }}
       >
-        {/* Close = hides modal, does NOT stop timer */}
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-white transition-colors" title="Close (timer keeps running)">
           <X size={20} />
         </button>
 
-        {/* Header */}
         <div className="text-center mb-4">
           <div className="font-mono tracking-widest mb-1" style={{ color: diffConfig.color, fontSize: 10 }}>TIMER COMMAND CENTER</div>
           <div className="font-bold text-lg text-white truncate" style={{ maxWidth: 300, margin: '0 auto' }}>{task.name}</div>
@@ -515,40 +969,32 @@ function TimerModal({
           )}
         </div>
 
-        {/* Preset buttons */}
         <div className="flex gap-2 mb-4 justify-center flex-wrap">
           {TIMER_PRESETS.map((p) => (
-            <button
-              key={p.label}
-              onClick={() => { recordActivity(); onApplyPreset(p.seconds); }}
+            <button key={p.label} onClick={() => { recordActivity(); onApplyPreset(p.seconds); }}
               className="px-4 py-1.5 font-mono text-xs font-black tracking-wider transition-all"
               style={{ background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.3)', color: '#00f5ff' }}
             >{p.label}</button>
           ))}
           <div className="flex gap-1">
-            <input
-              type="number"
-              value={customMinuteInput}
+            <input type="number" value={customMinuteInput}
               onChange={(e) => setCustomMinuteInput(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && tryApplyCustom()}
               placeholder="min"
               className="w-14 px-2 py-1.5 font-mono text-xs text-center focus:outline-none"
               style={{ background: 'rgba(0,0,0,0.4)', border: '1px solid rgba(255,107,0,0.3)', color: '#ff6b00' }}
             />
-            <button
-              onClick={tryApplyCustom}
+            <button onClick={tryApplyCustom}
               className="px-2 py-1.5 font-mono text-xs"
               style={{ background: 'rgba(255,107,0,0.1)', border: '1px solid rgba(255,107,0,0.4)', color: '#ff6b00' }}
             >SET</button>
           </div>
         </div>
 
-        {/* SVG ring */}
         <div className="flex justify-center mb-5 relative">
           <svg width="200" height="200" viewBox="0 0 200 200" style={{ transform: 'rotate(-90deg)' }}>
             <circle cx="100" cy="100" r="90" fill="none" stroke="#1a2f4a" strokeWidth="6" />
-            <motion.circle
-              cx="100" cy="100" r="90" fill="none" stroke={diffConfig.color}
+            <motion.circle cx="100" cy="100" r="90" fill="none" stroke={diffConfig.color}
               strokeWidth="6" strokeLinecap="round"
               strokeDasharray={circumference}
               animate={{ strokeDashoffset: strokeOffset }}
@@ -566,10 +1012,8 @@ function TimerModal({
           </div>
         </div>
 
-        {/* Controls */}
         <div className="flex gap-3 justify-center">
-          <motion.button
-            whileTap={{ scale: 0.95 }}
+          <motion.button whileTap={{ scale: 0.95 }}
             onClick={() => { recordActivity(); onToggleTimer(); }}
             className="flex items-center gap-2 px-6 py-3 font-mono text-sm font-bold transition-all"
             style={{
@@ -582,11 +1026,7 @@ function TimerModal({
             {timerIsRunning ? <Pause size={16} /> : <Play size={16} />}
             {timerIsRunning ? 'PAUSE' : 'ENGAGE'}
           </motion.button>
-
-          {/* ABORT — the ONLY way to truly reset the timer */}
-          <button
-            onClick={() => { recordActivity(); onAbortTimer(); }}
-            title="Abort & reset timer"
+          <button onClick={() => { recordActivity(); onAbortTimer(); }}
             className="flex items-center gap-1 px-4 py-3 font-mono text-xs text-gray-500 hover:text-red-400 transition-colors border border-gray-800 hover:border-red-900"
           >
             <RotateCcw size={14} /> ABORT
@@ -603,7 +1043,6 @@ function TimerModal({
             TARGET: {task.pyqs} PYQs
           </div>
         )}
-
         <LiveTimeDisplay taskId={task.id} isRunning={timerIsRunning} sessionStartRef={dummySessionRef} />
       </motion.div>
     </motion.div>
@@ -611,7 +1050,6 @@ function TimerModal({
 }
 
 // ── MissionCard ───────────────────────────────────────────────────────────────
-
 function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer, timerIsRunning }) {
   const diffConfig    = DIFF_CONFIG[task.diff];
   const subjectConfig = SUBJECT_CONFIG[task.subject] || {};
@@ -629,7 +1067,6 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
     ? `0 0 ${10 + comboLevel * 8}px ${diffConfig.color}, 0 0 ${20 + comboLevel * 15}px ${diffConfig.color}60`
     : `0 0 10px ${diffConfig.color}15`;
 
-  // Dim non-active cards when any timer is running
   const dimmed = timerIsRunning && !isActiveTimer;
 
   return (
@@ -653,8 +1090,7 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
       <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: diffConfig.color, boxShadow: `0 0 ${8 + comboLevel * 4}px ${diffConfig.color}` }} />
 
       {isOverheat && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
+        <motion.div className="absolute inset-0 pointer-events-none"
           animate={{ opacity: [0.08, 0.22, 0.08] }} transition={{ repeat: Infinity, duration: 0.6 }}
           style={{ background: `radial-gradient(ellipse at center, ${diffConfig.color}44, transparent 70%)` }}
         />
@@ -697,17 +1133,14 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
         {targetPyqCount > 0 && (
           <div className="mt-3 flex items-center gap-2">
             <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
-              <motion.div
-                className="h-full rounded-full"
+              <motion.div className="h-full rounded-full"
                 style={{ background: diffConfig.color, boxShadow: `0 0 4px ${diffConfig.color}` }}
                 animate={{ width: `${Math.min(100, (solvedCount / targetPyqCount) * 100)}%` }}
                 transition={{ duration: 0.3 }}
               />
             </div>
             <span className="font-mono" style={{ color: diffConfig.color, fontSize: 10 }}>{solvedCount}/{targetPyqCount}</span>
-            <motion.button
-              whileTap={{ scale: 0.85 }}
-              onClick={incrementSolved}
+            <motion.button whileTap={{ scale: 0.85 }} onClick={incrementSolved}
               className="px-2 py-1 font-mono font-black"
               style={{ background: `${diffConfig.color}20`, border: `1px solid ${diffConfig.color}60`, color: diffConfig.color, fontSize: 10 }}
             >+1</motion.button>
@@ -715,16 +1148,14 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
         )}
 
         <div className="flex gap-2 mt-3">
-          <button
-            onClick={() => onOpenTimer(task)}
+          <button onClick={() => onOpenTimer(task)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono tracking-wider transition-all"
             style={{ background: isActiveTimer ? 'rgba(0,255,65,0.15)' : 'rgba(0,245,255,0.08)', border: `1px solid ${isActiveTimer ? 'rgba(0,255,65,0.6)' : 'rgba(0,245,255,0.3)'}`, color: isActiveTimer ? '#00ff41' : '#00f5ff' }}
           >
             <Clock size={12} /> {isActiveTimer ? 'OPEN TIMER' : 'TIMER'}
           </button>
 
-          <motion.button
-            whileTap={canAnnihilate ? { scale: 0.95 } : {}}
+          <motion.button whileTap={canAnnihilate ? { scale: 0.95 } : {}}
             onClick={() => canAnnihilate && onAnnihilate(task, comboLevel, currentMultiplier)}
             className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono tracking-wider transition-all flex-1"
             style={{
@@ -741,8 +1172,7 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
               : `LOCKED (${solvedCount}/${targetPyqCount})`}
           </motion.button>
 
-          <button
-            onClick={() => onDelete(task.id)}
+          <button onClick={() => onDelete(task.id)}
             className="flex items-center px-2 py-1.5 text-gray-600 hover:text-red-400 transition-colors border border-gray-800 hover:border-red-900"
           >
             <Trash2 size={12} />
@@ -754,7 +1184,6 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
 }
 
 // ── WarArchiveModal ───────────────────────────────────────────────────────────
-
 function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }) {
   const totalPyqsSolved = archives.reduce((s, e) => s + (e.finalPyqCount    || 0), 0);
   const totalMinutes    = archives.reduce((s, e) => s + (e.timeSpentMinutes || 0), 0);
@@ -780,7 +1209,6 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
         className="relative w-full flex flex-col"
         style={{ background: 'linear-gradient(135deg, #080e18, #04080f)', border: '1px solid rgba(255,165,0,0.4)', boxShadow: '0 0 40px rgba(255,165,0,0.15)', maxWidth: 900, maxHeight: '90vh' }}
       >
-        {/* Title bar */}
         <div className="no-print flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'rgba(255,165,0,0.2)', background: 'rgba(255,165,0,0.04)' }}>
           <div className="flex items-center gap-3">
             <div className="flex gap-1.5">
@@ -791,8 +1219,7 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
             <span className="font-mono text-gray-600 tracking-widest" style={{ fontSize: 10 }}>nexus@mhtcet:~/WAR_ARCHIVES$</span>
           </div>
           <div className="flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
+            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
               onClick={onDownloadPDF}
               className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider"
               style={{ background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.35)', color: '#00f5ff', fontSize: 10 }}
@@ -863,75 +1290,93 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 // SECTION 6 — MAIN APP
-// ─────────────────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
 
 export default function App() {
 
-  // ── Persisted state ──────────────────────────────────────────────────────────
+  // ── RPG STATS STATE ───────────────────────────────────────────────────────────
+  const [totalXP,        setTotalXP]        = useState(() => LS.get('total_xp', 0));
+  const [rpgStats,       setRpgStats]       = useState(() => LS.get('rpg_stats', { strength: 0, dexterity: 0, intelligence: 0 }));
+
+  // Derived RPG values (pure, no state)
+  const userLevel  = getUserLevel(totalXP);
+  const systemTheme = getSystemTheme(userLevel);
+
+  // ── LOSS AVERSION — SYSTEM INTEGRITY ─────────────────────────────────────────
+  // Starts at 100%. Decays if no pomodoro started in >1hr. Restores on mission start.
+  const [systemIntegrity,  setSystemIntegrity]  = useState(() => LS.get('system_integrity', 100));
+  const lastPomoStartRef   = useRef(LS.get('last_pomo_start_epoch', 0));
+  const integrityTimerRef  = useRef(null);
+
+  // ── CORE APP STATE ────────────────────────────────────────────────────────────
   const [completedChapters, setCompletedChapters] = useState(() => LS.get('completed_chapters', []));
-  const [totalXP,           setTotalXP]           = useState(() => LS.get('total_xp', 0));
-  const [missions,          setMissions]           = useState(() => LS.get('missions', []));
-  const [revisions,         setRevisions]          = useState(() => LS.get('revisions', []));
-  const [warArchives,       setWarArchives]        = useState(() => LS.get('WAR_ARCHIVES', []));
-  const [vigilanceMode,     setVigilanceMode]      = useState(() => LS.get('vigilance_mode', false));
+  const [missions,           setMissions]          = useState(() => LS.get('missions', []));
+  const [revisions,          setRevisions]         = useState(() => LS.get('revisions', []));
+  const [warArchives,        setWarArchives]       = useState(() => LS.get('WAR_ARCHIVES', []));
+  const [vigilanceMode,      setVigilanceMode]     = useState(() => LS.get('vigilance_mode', false));
 
-  // ── FIX 1: TOP-LEVEL PERSISTENT POMODORO STATE ──────────────────────────────
-  // All timer state lives HERE — survives modal open/close.
-  // On mount we restore from localStorage including the epoch we started.
-  const [timerTaskId,         setTimerTaskId]         = useState(() => LS.get('ptimer_taskId', null));
-  const [timerSecondsLeft,    setTimerSecondsLeft]    = useState(() => LS.get('ptimer_secondsLeft', POMODORO_WORK));
-  const [timerTotalSeconds,   setTimerTotalSeconds]   = useState(() => LS.get('ptimer_totalSeconds', POMODORO_WORK));
-  const [timerIsRunning,      setTimerIsRunning]      = useState(false); // never persist "running" — on reload timer is paused
-  const [timerIsBreak,        setTimerIsBreak]        = useState(() => LS.get('ptimer_isBreak', false));
-  const [timerCompletedSessions, setTimerCompletedSessions] = useState(() => LS.get('ptimer_sessions', 0));
+  // ── TIMER STATE (top-level, persists across modal open/close) ─────────────────
+  const [timerTaskId,             setTimerTaskId]             = useState(() => LS.get('ptimer_taskId', null));
+  const [timerSecondsLeft,        setTimerSecondsLeft]        = useState(() => LS.get('ptimer_secondsLeft', POMODORO_WORK));
+  const [timerTotalSeconds,       setTimerTotalSeconds]       = useState(() => LS.get('ptimer_totalSeconds', POMODORO_WORK));
+  const [timerIsRunning,          setTimerIsRunning]          = useState(false);
+  const [timerIsBreak,            setTimerIsBreak]            = useState(() => LS.get('ptimer_isBreak', false));
+  const [timerCompletedSessions,  setTimerCompletedSessions]  = useState(() => LS.get('ptimer_sessions', 0));
+  const sessionStartEpochRef = useRef(null);
 
-  // Session-level elapsed-time accumulation for the currently active task
-  const sessionStartEpochRef = useRef(null); // epoch ms when we last pressed START
-
-  // ── Ephemeral UI state ───────────────────────────────────────────────────────
-  const [modalOpen,        setModalOpen]        = useState(false);   // timer modal open?
+  // ── UI STATE ──────────────────────────────────────────────────────────────────
+  const [modalOpen,        setModalOpen]        = useState(false);
   const [xpFloatData,      setXpFloatData]      = useState(null);
   const [showArchiveModal, setShowArchiveModal] = useState(false);
 
-  // ── Mission builder form ─────────────────────────────────────────────────────
+  // ── MISSION BUILDER FORM ──────────────────────────────────────────────────────
   const [formSubject,  setFormSubject]  = useState('Physics');
   const [formChapter,  setFormChapter]  = useState('');
   const [formDiff,     setFormDiff]     = useState('M');
   const [formPyqCount, setFormPyqCount] = useState(0);
 
-  // ── Seed form to first uncompleted chapter ───────────────────────────────────
+  // Seed form on mount
   useEffect(() => {
     const first = SYLLABUS['Physics'].find((ch) => !completedChapters.includes(`Physics::${ch.name}`));
     if (first) { setFormChapter(first.name); setFormDiff(first.diff); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Persist app state ────────────────────────────────────────────────────────
+  // ── PERSISTENCE EFFECTS ───────────────────────────────────────────────────────
   useEffect(() => { LS.set('completed_chapters', completedChapters); }, [completedChapters]);
   useEffect(() => { LS.set('total_xp',           totalXP);           }, [totalXP]);
+  useEffect(() => { LS.set('rpg_stats',           rpgStats);          }, [rpgStats]);
   useEffect(() => { LS.set('missions',            missions);          }, [missions]);
   useEffect(() => { LS.set('revisions',           revisions);         }, [revisions]);
   useEffect(() => { LS.set('vigilance_mode',      vigilanceMode);     }, [vigilanceMode]);
+  useEffect(() => { LS.set('system_integrity',    systemIntegrity);   }, [systemIntegrity]);
+  useEffect(() => { LS.set('ptimer_secondsLeft',  timerSecondsLeft);  }, [timerSecondsLeft]);
+  useEffect(() => { LS.set('ptimer_totalSeconds', timerTotalSeconds); }, [timerTotalSeconds]);
+  useEffect(() => { LS.set('ptimer_isBreak',      timerIsBreak);      }, [timerIsBreak]);
+  useEffect(() => { LS.set('ptimer_sessions',     timerCompletedSessions); }, [timerCompletedSessions]);
+  useEffect(() => { LS.set('ptimer_taskId',       timerTaskId);       }, [timerTaskId]);
 
-  // ── Persist timer metadata ───────────────────────────────────────────────────
-  useEffect(() => { LS.set('ptimer_secondsLeft',   timerSecondsLeft);        }, [timerSecondsLeft]);
-  useEffect(() => { LS.set('ptimer_totalSeconds',  timerTotalSeconds);       }, [timerTotalSeconds]);
-  useEffect(() => { LS.set('ptimer_isBreak',       timerIsBreak);            }, [timerIsBreak]);
-  useEffect(() => { LS.set('ptimer_sessions',      timerCompletedSessions);  }, [timerCompletedSessions]);
-  useEffect(() => { LS.set('ptimer_taskId',        timerTaskId);             }, [timerTaskId]);
+  // ── LOSS AVERSION: INTEGRITY DECAY ENGINE ────────────────────────────────────
+  // Every 30 minutes, check if last pomo start was > 1hr ago → decay 15%
+  useEffect(() => {
+    integrityTimerRef.current = setInterval(() => {
+      const idleMs = Date.now() - lastPomoStartRef.current;
+      if (idleMs >= INTEGRITY_IDLE_THRESHOLD_MS) {
+        setSystemIntegrity((prev) => Math.max(0, prev - INTEGRITY_DECAY_AMOUNT));
+      }
+    }, INTEGRITY_DECAY_INTERVAL_MS);
+    return () => clearInterval(integrityTimerRef.current);
+  }, []);
 
-  // ── FIX 1 CORE: Single top-level setInterval tick ────────────────────────────
-  // The interval is owned by App, not by any modal. Closing the modal never
-  // clears this interval. Only onAbortTimer stops it.
+  // ── TOP-LEVEL TIMER TICK ──────────────────────────────────────────────────────
   const tickRef = useRef(null);
 
   useEffect(() => {
     if (!timerIsRunning) {
       clearInterval(tickRef.current);
       tickRef.current = null;
-      // Flush elapsed time when we pause/stop
       if (sessionStartEpochRef.current !== null && timerTaskId) {
         const elapsed  = Math.floor((Date.now() - sessionStartEpochRef.current) / 1000);
         const previous = LS.get(`time_spent_${timerTaskId}`, 0);
@@ -944,39 +1389,37 @@ export default function App() {
     tickRef.current = setInterval(() => {
       setTimerSecondsLeft((prev) => {
         if (prev <= 1) {
-          // Session complete → flip break/work
           clearInterval(tickRef.current);
           tickRef.current = null;
-
           setTimerIsRunning(false);
           setTimerIsBreak((wasBreak) => {
             const nextIsBreak      = !wasBreak;
             const nextTotalSeconds = nextIsBreak ? POMODORO_BREAK : POMODORO_WORK;
             setTimerTotalSeconds(nextTotalSeconds);
-            if (!wasBreak) {
-              setTimerCompletedSessions((s) => s + 1);
-            }
+            if (!wasBreak) setTimerCompletedSessions((s) => s + 1);
             return nextIsBreak;
           });
-          return timerTotalSeconds; // reset to full duration for next block
+          return timerTotalSeconds;
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => { clearInterval(tickRef.current); tickRef.current = null; };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timerIsRunning]);
 
-  // ── Timer callbacks passed into TimerModal ───────────────────────────────────
+  // ── TIMER CALLBACKS ───────────────────────────────────────────────────────────
 
   const handleToggleTimer = useCallback(() => {
     setTimerIsRunning((prev) => {
       if (!prev) {
-        // Starting → record epoch so we can accumulate time_spent
-        sessionStartEpochRef.current = Date.now();
+        sessionStartEpochRef.current  = Date.now();
+        lastPomoStartRef.current      = Date.now();
+        LS.set('last_pomo_start_epoch', Date.now());
+        // Restore integrity on mission start
+        setSystemIntegrity((si) => Math.min(100, si + INTEGRITY_RESTORE_AMOUNT));
       } else {
-        // Pausing → flush
         if (sessionStartEpochRef.current !== null && timerTaskId) {
           const elapsed  = Math.floor((Date.now() - sessionStartEpochRef.current) / 1000);
           const previous = LS.get(`time_spent_${timerTaskId}`, 0);
@@ -988,7 +1431,6 @@ export default function App() {
     });
   }, [timerTaskId]);
 
-  // Abort = only explicit reset. Clears interval via the useEffect above.
   const handleAbortTimer = useCallback(() => {
     if (sessionStartEpochRef.current !== null && timerTaskId) {
       const elapsed  = Math.floor((Date.now() - sessionStartEpochRef.current) / 1000);
@@ -1004,7 +1446,6 @@ export default function App() {
   }, [timerTaskId]);
 
   const handleApplyPreset = useCallback((presetSeconds) => {
-    // Flush any running time first
     if (sessionStartEpochRef.current !== null && timerTaskId) {
       const elapsed  = Math.floor((Date.now() - sessionStartEpochRef.current) / 1000);
       const previous = LS.get(`time_spent_${timerTaskId}`, 0);
@@ -1021,25 +1462,29 @@ export default function App() {
     handleApplyPreset(minutes * 60);
   }, [handleApplyPreset]);
 
-  // Open timer modal for a task — sets it as the active task if none active
   const handleOpenTimer = useCallback((task) => {
     if (timerTaskId !== task.id) {
-      // Switching tasks → abort current timer first
       handleAbortTimer();
       setTimerTaskId(task.id);
     }
     setModalOpen(true);
   }, [timerTaskId, handleAbortTimer]);
 
-  // Closing the modal → does NOT stop the timer
-  const handleCloseModal = useCallback(() => {
-    setModalOpen(false);
-  }, []);
+  const handleCloseModal = useCallback(() => setModalOpen(false), []);
 
-  // The task object for the current timer task (look up from missions list)
   const activeTimerTask = missions.find((m) => m.id === timerTaskId) || null;
 
-  // ── Derived values ────────────────────────────────────────────────────────────
+  // ── DERIVED EPISODE/SYLLABUS HELPERS ─────────────────────────────────────────
+
+  // Determine which episodes are unlocked
+  const getEpisodeUnlocked = useCallback((episodeId) => {
+    if (episodeId === 1) return true;
+    const prevEpisode = EPISODES.find(e => e.id === episodeId - 1);
+    if (!prevEpisode) return false;
+    return prevEpisode.chapters.every(c => completedChapters.includes(`${c.subject}::${c.name}`));
+  }, [completedChapters]);
+
+  // ── DERIVED PROGRESS ──────────────────────────────────────────────────────────
   const progressPercent     = (completedChapters.length / TOTAL_CHAPTERS) * 100;
   const currentRank         = getRank(totalXP);
   const nextRank            = RANK_THRESHOLDS.find((r) => r.min > totalXP) || RANK_THRESHOLDS[RANK_THRESHOLDS.length - 1];
@@ -1059,16 +1504,18 @@ export default function App() {
     .filter((m) => m.subject === formSubject && !m.isMicro)
     .map((m) => m.name);
 
-  // Print zone
+  // Deployed missions as {subject, name} for episode card buttons
+  const deployedMissionRefs = missions.map(m => ({ subject: m.subject, name: m.name }));
+
+  // Print values
   const printGeneratedDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
   const printTotalPyqs  = warArchives.reduce((s, a) => s + (a.finalPyqCount    || 0), 0);
   const printTotalMins  = warArchives.reduce((s, a) => s + (a.timeSpentMinutes || 0), 0);
   const printTotalHours = (printTotalMins / 60).toFixed(1);
 
-  // ── FIX 2: PDF trigger — window.print() reveals #archive-report ──────────────
   const handleDownloadPDF = () => window.print();
 
-  // ── Event handlers ────────────────────────────────────────────────────────────
+  // ── EVENT HANDLERS ────────────────────────────────────────────────────────────
 
   const handleSubjectChange = (newSubject) => {
     const first = SYLLABUS[newSubject].find((ch) => !completedChapters.includes(`${newSubject}::${ch.name}`));
@@ -1094,6 +1541,21 @@ export default function App() {
     setFormPyqCount(0);
   };
 
+  // Deploy a chapter directly from the episode roadmap
+  const handleDeployFromEpisode = (ch) => {
+    const alreadyQueued = missions.some(m => m.subject === ch.subject && m.name === ch.name);
+    if (alreadyQueued) return;
+    const syllabusEntry = SYLLABUS[ch.subject]?.find(s => s.name === ch.name);
+    if (!syllabusEntry) return;
+    const newMission = {
+      id: Date.now().toString(),
+      name: ch.name, subject: ch.subject,
+      diff: syllabusEntry.diff, pyqs: 0,
+      createdAt: Date.now(),
+    };
+    setMissions((prev) => [newMission, ...prev]);
+  };
+
   const handleIgnite = () => {
     const subjectKeys = Object.keys(SYLLABUS);
     const subj        = subjectKeys[Math.floor(Math.random() * subjectKeys.length)];
@@ -1102,43 +1564,52 @@ export default function App() {
     handleAbortTimer();
     setTimerTaskId(micro.id);
     setModalOpen(true);
+    // Restore some integrity for taking action
+    setSystemIntegrity((si) => Math.min(100, si + INTEGRITY_RESTORE_AMOUNT));
   };
 
+  // ── RPG: ANNIHILATE MISSION ───────────────────────────────────────────────────
   const handleAnnihilate = (task, comboLevel, velocityMultiplier) => {
     const chapterKey = `${task.subject}::${task.name}`;
     setMissions((prev) => prev.filter((m) => m.id !== task.id));
 
-    // FIX 4: Mark chapter completed → strikes through in Syllabus Vault
     if (!task.isMicro && !completedChapters.includes(chapterKey)) {
       setCompletedChapters((prev) => [...prev, chapterKey]);
     }
 
     const baseXP      = XP_MAP[task.diff] || 150;
     const hadVelocity = comboLevel > 0;
-    const xpEarned    = hadVelocity ? Math.round(baseXP * velocityMultiplier) : baseXP;
+    // God mode bonus: +25% to XP if theme === god
+    const godBonus    = systemTheme === 'god' ? 1.25 : 1;
+    const xpEarned    = Math.round((hadVelocity ? baseXP * velocityMultiplier : baseXP) * godBonus);
+
     setTotalXP((prev) => prev + xpEarned);
     setXpFloatData({ xpAmount: xpEarned, hasVelocityBonus: hadVelocity, id: Date.now() });
 
+    // ── RPG STAT INCREASE ────────────────────────────────────────────────────────
     if (!task.isMicro) {
+      const statKey = SUBJECT_CONFIG[task.subject]?.stat;
+      if (statKey) {
+        setRpgStats((prev) => ({ ...prev, [statKey]: (prev[statKey] || 0) + xpEarned }));
+      }
+
+      // Archive entry
       const timeSpentSeconds = LS.get(`time_spent_${task.id}`, 0);
       const pyqsSolved       = LS.get(`solved_${task.id}`, 0);
       const archiveEntry = {
-        id:               task.id,
-        chapterName:      task.name,
-        subject:          task.subject,
-        difficulty:       task.diff,
-        finalPyqCount:    pyqsSolved,
+        id: task.id, chapterName: task.name, subject: task.subject,
+        difficulty: task.diff, finalPyqCount: pyqsSolved,
         timeSpentMinutes: Math.round(timeSpentSeconds / 60),
-        xpEarned,
-        hadVelocityBonus: hadVelocity,
-        completedAt:      Date.now(),
-        completedDate:    new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        completedTime:    new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        xpEarned, hadVelocityBonus: hadVelocity,
+        completedAt: Date.now(),
+        completedDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        completedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
       };
       const existing = LS.get('WAR_ARCHIVES', []);
       LS.set('WAR_ARCHIVES', [archiveEntry, ...existing]);
       setWarArchives((prev) => [archiveEntry, ...prev]);
 
+      // Spaced repetition schedule
       const nowMs = Date.now();
       setRevisions((prev) => [
         ...prev,
@@ -1148,7 +1619,6 @@ export default function App() {
       ]);
     }
 
-    // If the annihilated task was the active timer task → clear timer
     if (timerTaskId === task.id) {
       handleAbortTimer();
       setTimerTaskId(null);
@@ -1158,7 +1628,13 @@ export default function App() {
     LS.remove(`timer_${task.id}`);
     LS.remove(`solved_${task.id}`);
     LS.remove(`time_spent_${task.id}`);
-    fireConfetti(task.diff);
+
+    // Fire appropriate confetti for theme
+    if (systemTheme === 'god') {
+      fireGodModeConfetti();
+    } else {
+      fireConfetti(task.diff);
+    }
   };
 
   const handleDeleteMission = (taskId) => {
@@ -1173,47 +1649,59 @@ export default function App() {
     LS.remove(`time_spent_${taskId}`);
   };
 
-  const getSortedChaptersForSubject = (subject) => {
-    const all       = SYLLABUS[subject];
-    const pending   = all.filter((ch) => !completedChapters.includes(`${subject}::${ch.name}`));
-    const completed = all.filter((ch) =>  completedChapters.includes(`${subject}::${ch.name}`));
-    return [...pending, ...completed];
-  };
+  // ── DYNAMIC GLITCH STYLES based on integrity ──────────────────────────────────
+  const glitchCSS = getGlitchStyles(systemIntegrity);
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // JSX
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── THEME-DEPENDENT HEADER STYLES ────────────────────────────────────────────
+  const headerStyle = systemTheme === 'god'
+    ? { background: 'rgba(20,12,0,0.97)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,215,0,0.4)' }
+    : systemTheme === 'neon'
+    ? { background: 'rgba(5,10,14,0.97)', backdropFilter: 'blur(12px)', borderColor: '#1a2f4a' }
+    : { background: 'rgba(8,8,12,0.97)',  backdropFilter: 'blur(12px)', borderColor: '#1a1a22' };
+
+  const bgStyle = systemTheme === 'god'
+    ? 'linear-gradient(180deg, #0a0800 0%, #120f00 50%, #0a0800 100%)'
+    : systemTheme === 'neon'
+    ? 'linear-gradient(180deg, #020508 0%, #030810 50%, #020508 100%)'
+    : 'linear-gradient(180deg, #050508 0%, #080810 50%, #050508 100%)';
+
+  // ── JSX ────────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen pb-20" style={{ background: 'linear-gradient(180deg, #020508 0%, #030810 50%, #020508 100%)', color: '#e0f0ff' }}>
-
-      {/*
-        ═══════════════════════════════════════════════════════════════
-        FIX 2: PRINT / PDF STYLES — EXACT SPEC
-        body * → visibility: hidden
-        #archive-report, #archive-report * → visibility: visible, color: black
-        #archive-report → position absolute, top 0, left 0, width 100%
-        .no-print → display: none
-        ═══════════════════════════════════════════════════════════════
-      */}
+    <div
+      className={`min-h-screen pb-20 ${systemIntegrity < 50 ? 'glitch-scanlines glitch-body glitch-color-shift' : ''}`}
+      style={{ background: bgStyle, color: '#e0f0ff' }}
+    >
+      {/* Glitch + print styles injected dynamically */}
       <style>{`
+        ${glitchCSS}
+
+        /* God Mode ambient particle shimmer on body */
+        ${systemTheme === 'god' ? `
+          body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+            background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.04), transparent 60%);
+            animation: god-pulse 4s ease-in-out infinite;
+          }
+          @keyframes god-pulse {
+            0%, 100% { opacity: 0.4; }
+            50% { opacity: 1; }
+          }
+        ` : ''}
+
         @media print {
           body * { visibility: hidden !important; background: none !important; }
           #archive-report, #archive-report * { visibility: visible !important; color: black !important; }
           #archive-report {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            display: block !important;
+            position: absolute !important; top: 0 !important; left: 0 !important;
+            width: 100% !important; display: block !important;
           }
           .no-print { display: none !important; }
-
-          #archive-report {
-            font-family: 'Courier New', Courier, monospace;
-            padding: 32px;
-            box-sizing: border-box;
-          }
+          #archive-report { font-family: 'Courier New', Courier, monospace; padding: 32px; box-sizing: border-box; }
           .print-header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #222; padding-bottom: 16px; }
           .print-title  { font-size: 22px; font-weight: 900; letter-spacing: 4px; }
           .print-sub    { font-size: 11px; color: #555; margin-top: 4px; letter-spacing: 2px; }
@@ -1221,27 +1709,21 @@ export default function App() {
           .print-stat     { text-align: center; }
           .print-stat-val { font-size: 22px; font-weight: 900; }
           .print-stat-lbl { font-size: 9px; letter-spacing: 2px; color: #555; }
-          .print-table                       { width: 100%; border-collapse: collapse; font-size: 11px; }
-          .print-table th                    { border-bottom: 2px solid #222; padding: 6px 8px; text-align: left; font-size: 9px; letter-spacing: 1px; background: #f5f5f5; }
-          .print-table td                    { border-bottom: 1px solid #ddd; padding: 6px 8px; }
+          .print-table    { width: 100%; border-collapse: collapse; font-size: 11px; }
+          .print-table th { border-bottom: 2px solid #222; padding: 6px 8px; text-align: left; font-size: 9px; letter-spacing: 1px; background: #f5f5f5; }
+          .print-table td { border-bottom: 1px solid #ddd; padding: 6px 8px; }
           .print-table tr:nth-child(even) td { background: #fafafa; }
           .print-footer { margin-top: 20px; font-size: 9px; color: #888; text-align: center; letter-spacing: 1px; }
           @page { margin: 1.5cm; }
         }
       `}</style>
 
-      {/*
-        ═══════════════════════════════════════════════════════════════
-        FIX 2: HIDDEN PRINT ZONE
-        id="archive-report" — always in DOM, display:none on screen,
-        becomes the sole visible element during window.print()
-        ═══════════════════════════════════════════════════════════════
-      */}
+      {/* ── Hidden print zone ── */}
       <div id="archive-report" style={{ display: 'none' }}>
         <div className="print-header">
           <div className="print-title">MHT-CET NEXUS — INTEL REPORT</div>
           <div className="print-sub">CLASSIFIED WAR ARCHIVES • GENERATED {printGeneratedDate}</div>
-          <div className="print-sub" style={{ marginTop: 4 }}>OPERATIVE RANK: {currentRank.rank} • TOTAL XP: {totalXP.toLocaleString()}</div>
+          <div className="print-sub" style={{ marginTop: 4 }}>OPERATIVE RANK: {currentRank.rank} • TOTAL XP: {totalXP.toLocaleString()} • LEVEL: {userLevel}</div>
         </div>
         <div className="print-stats">
           <div className="print-stat"><div className="print-stat-val">{warArchives.length}</div><div className="print-stat-lbl">MISSIONS COMPLETE</div></div>
@@ -1271,13 +1753,13 @@ export default function App() {
             ))}
           </tbody>
         </table>
-        <div className="print-footer">MHT-CET NEXUS • NEURO-WARFARE PROTOCOL v3.0 • ALL DATA IS PROPERTY OF THE OPERATIVE</div>
+        <div className="print-footer">MHT-CET NEXUS • NEURAL-WARFARE: SEASON 1 • NEURO-WARFARE PROTOCOL v4.0</div>
       </div>
 
       {/* ── Floating XP ── */}
       <AnimatePresence>
         {xpFloatData && (
-          <XPFloatAnimation key={xpFloatData.id} xpAmount={xpFloatData.xpAmount} hasVelocityBonus={xpFloatData.hasVelocityBonus} onAnimationDone={() => setXpFloatData(null)} />
+          <XPFloatAnimation key={xpFloatData.id} xpAmount={xpFloatData.xpAmount} hasVelocityBonus={xpFloatData.hasVelocityBonus} onAnimationDone={() => setXpFloatData(null)} theme={systemTheme} />
         )}
       </AnimatePresence>
 
@@ -1288,25 +1770,16 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/*
-        ── FIX 1: Timer Modal
-        onClose = hide modal only (timer keeps ticking via top-level interval)
-        onAbortTimer = explicit reset
-      */}
+      {/* ── Timer Modal ── */}
       <AnimatePresence>
         {modalOpen && activeTimerTask && (
           <TimerModal
-            task={activeTimerTask}
-            onClose={handleCloseModal}
-            timerSecondsLeft={timerSecondsLeft}
-            timerTotalSeconds={timerTotalSeconds}
-            timerIsRunning={timerIsRunning}
-            timerIsBreak={timerIsBreak}
+            task={activeTimerTask} onClose={handleCloseModal}
+            timerSecondsLeft={timerSecondsLeft} timerTotalSeconds={timerTotalSeconds}
+            timerIsRunning={timerIsRunning} timerIsBreak={timerIsBreak}
             timerCompletedSessions={timerCompletedSessions}
-            onToggleTimer={handleToggleTimer}
-            onAbortTimer={handleAbortTimer}
-            onApplyPreset={handleApplyPreset}
-            onApplyCustomMinutes={handleApplyCustomMinutes}
+            onToggleTimer={handleToggleTimer} onAbortTimer={handleAbortTimer}
+            onApplyPreset={handleApplyPreset} onApplyCustomMinutes={handleApplyCustomMinutes}
             vigilanceMode={vigilanceMode}
           />
         )}
@@ -1324,74 +1797,112 @@ export default function App() {
       </AnimatePresence>
 
       {/* ══ HEADER ══ */}
-      <header className="no-print sticky top-0 z-50 border-b" style={{ background: 'rgba(5,10,14,0.97)', backdropFilter: 'blur(12px)', borderColor: '#1a2f4a' }}>
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 flex items-center justify-center" style={{ background: 'rgba(0,245,255,0.1)', border: '1px solid rgba(0,245,255,0.5)' }}>
-              <Atom size={16} color="#00f5ff" />
+      <header className="no-print sticky top-0 z-50 border-b" style={headerStyle}>
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 flex items-center justify-center relative"
+                style={{
+                  background: systemTheme === 'god' ? 'rgba(255,215,0,0.1)' : 'rgba(0,245,255,0.1)',
+                  border: `1px solid ${systemTheme === 'god' ? 'rgba(255,215,0,0.5)' : 'rgba(0,245,255,0.5)'}`,
+                }}>
+                {systemTheme === 'god' ? <Star size={16} color="#ffd700" /> : <Atom size={16} color="#00f5ff" />}
+              </div>
+              <div>
+                <div className="font-mono text-sm font-black tracking-widest"
+                  style={{ color: systemTheme === 'god' ? '#ffd700' : '#00f5ff', textShadow: systemTheme === 'god' ? '0 0 10px #ffd700' : '0 0 10px #00f5ff' }}>
+                  MHT-CET NEXUS
+                </div>
+                <div className="font-mono text-gray-600 tracking-widest" style={{ fontSize: 9 }}>
+                  NEURAL-WARFARE: SEASON 1
+                </div>
+              </div>
             </div>
-            <div>
-              <div className="font-mono text-sm font-black tracking-widest" style={{ color: '#00f5ff', textShadow: '0 0 10px #00f5ff' }}>MHT-CET NEXUS</div>
-              <div className="font-mono text-gray-600 tracking-widest" style={{ fontSize: 9 }}>NEURO-WARFARE v3.0</div>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-4">
-            {/* Timer status chip — opens modal */}
-            {timerTaskId && (
-              <motion.button
-                animate={timerIsRunning ? { boxShadow: ['0 0 6px #00ff41', '0 0 18px #00ff41', '0 0 6px #00ff41'] } : {}}
-                transition={{ repeat: Infinity, duration: 1.2 }}
-                onClick={() => activeTimerTask ? setModalOpen(true) : null}
-                className="flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-black"
-                style={{ background: timerIsRunning ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.4)', border: `1px solid ${timerIsRunning ? '#00ff41' : '#2a3040'}`, color: timerIsRunning ? '#00ff41' : '#4a6080' }}
+            <div className="flex items-center gap-3 flex-wrap justify-end">
+              {/* System Integrity */}
+              <SystemIntegrityBar integrity={systemIntegrity} />
+
+              {/* Timer status chip */}
+              {timerTaskId && (
+                <motion.button
+                  animate={timerIsRunning ? { boxShadow: ['0 0 6px #00ff41', '0 0 18px #00ff41', '0 0 6px #00ff41'] } : {}}
+                  transition={{ repeat: Infinity, duration: 1.2 }}
+                  onClick={() => activeTimerTask ? setModalOpen(true) : null}
+                  className="flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-black"
+                  style={{
+                    background: timerIsRunning ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.4)',
+                    border: `1px solid ${timerIsRunning ? '#00ff41' : '#2a3040'}`,
+                    color: timerIsRunning ? '#00ff41' : '#4a6080'
+                  }}
+                >
+                  <Clock size={11} />
+                  {String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0')}:{String(timerSecondsLeft % 60).padStart(2, '0')}
+                  {timerIsRunning && <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff41' }} />}
+                </motion.button>
+              )}
+
+              {/* War Archives */}
+              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                onClick={() => setShowArchiveModal(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
+                style={{ background: warArchives.length > 0 ? 'rgba(255,165,0,0.1)' : 'rgba(30,30,30,0.4)', border: `1px solid ${warArchives.length > 0 ? 'rgba(255,165,0,0.5)' : '#2a3040'}`, color: warArchives.length > 0 ? '#ffa500' : '#3a4a5a', fontSize: 10 }}
               >
-                <Clock size={11} />
-                {String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0')}:{String(timerSecondsLeft % 60).padStart(2, '0')}
-                {timerIsRunning && <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff41' }} />}
+                <FolderOpen size={11} />
+                <span className="hidden sm:inline">WAR ARCHIVES</span>
+                {warArchives.length > 0 && <span style={{ background: 'rgba(255,165,0,0.2)', color: '#ffa500', fontSize: 9, padding: '0 4px' }}>{warArchives.length}</span>}
               </motion.button>
-            )}
 
-            {/* War Archives */}
-            <motion.button
-              whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-              onClick={() => setShowArchiveModal(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
-              style={{ background: warArchives.length > 0 ? 'rgba(255,165,0,0.1)' : 'rgba(30,30,30,0.4)', border: `1px solid ${warArchives.length > 0 ? 'rgba(255,165,0,0.5)' : '#2a3040'}`, color: warArchives.length > 0 ? '#ffa500' : '#3a4a5a', fontSize: 10 }}
-            >
-              <FolderOpen size={11} />
-              <span className="hidden sm:inline">WAR ARCHIVES</span>
-              {warArchives.length > 0 && <span className="font-mono px-1 py-0.5 rounded" style={{ background: 'rgba(255,165,0,0.2)', color: '#ffa500', fontSize: 9 }}>{warArchives.length}</span>}
-            </motion.button>
+              {/* Vigilance toggle */}
+              <button onClick={() => setVigilanceMode((v) => !v)}
+                className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
+                style={{ background: vigilanceMode ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.5)', border: `1px solid ${vigilanceMode ? '#00ff41' : '#2a3f2a'}`, color: vigilanceMode ? '#00ff41' : '#3a5a3a', fontSize: 10 }}
+              >
+                {vigilanceMode ? <Eye size={11} /> : <EyeOff size={11} />} <span className="hidden sm:inline">VIGILANCE</span>
+              </button>
 
-            {/* Vigilance toggle */}
-            <button
-              onClick={() => setVigilanceMode((v) => !v)}
-              className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
-              style={{ background: vigilanceMode ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.5)', border: `1px solid ${vigilanceMode ? '#00ff41' : '#2a3f2a'}`, color: vigilanceMode ? '#00ff41' : '#3a5a3a', fontSize: 10 }}
-            >
-              {vigilanceMode ? <Eye size={11} /> : <EyeOff size={11} />} VIGILANCE
-            </button>
-
-            <div className="text-right hidden sm:block">
-              <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>RANK</div>
-              <div className="font-mono text-sm font-black" style={{ color: '#ff00ff', textShadow: '0 0 8px #ff00ff' }}>{currentRank.rank}</div>
-            </div>
-            <div className="text-right">
-              <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>TOTAL XP</div>
-              <div className="font-mono text-sm font-black" style={{ color: '#00ff41', textShadow: '0 0 8px #00ff41' }}>{totalXP.toLocaleString()}</div>
-            </div>
-            <div className="hidden sm:block">
-              <div className="font-mono text-gray-600 mb-1" style={{ fontSize: 9 }}>{completedChapters.length}/{TOTAL_CHAPTERS}</div>
-              <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
-                <motion.div className="h-full rounded-full" style={{ background: '#00ff41', boxShadow: '0 0 6px #00ff41' }} animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.8 }} />
+              <div className="text-right hidden sm:block">
+                <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>LVL {userLevel} RANK</div>
+                <div className="font-mono text-sm font-black" style={{ color: systemTheme === 'god' ? '#ffd700' : '#ff00ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #ff00ff' }}>{currentRank.rank}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>TOTAL XP</div>
+                <div className="font-mono text-sm font-black" style={{ color: '#00ff41', textShadow: '0 0 8px #00ff41' }}>{totalXP.toLocaleString()}</div>
+              </div>
+              <div className="hidden sm:block">
+                <div className="font-mono text-gray-600 mb-1" style={{ fontSize: 9 }}>{completedChapters.length}/{TOTAL_CHAPTERS}</div>
+                <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
+                  <motion.div className="h-full rounded-full"
+                    style={{ background: systemTheme === 'god' ? '#ffd700' : '#00ff41', boxShadow: systemTheme === 'god' ? '0 0 6px #ffd700' : '0 0 6px #00ff41' }}
+                    animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.8 }}
+                  />
+                </div>
               </div>
             </div>
           </div>
+
+          {/* Loss Aversion warning banner */}
+          {systemIntegrity < 50 && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+              className="mt-2 px-3 py-1.5 flex items-center gap-2"
+              style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)' }}
+            >
+              <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}>
+                <AlertTriangle size={12} color="#ff4444" />
+              </motion.div>
+              <span className="font-mono text-red-400" style={{ fontSize: 9 }}>
+                ⚠ SYSTEM INTEGRITY {Math.round(systemIntegrity)}% — NEURAL DECAY ACTIVE — START A POMODORO TO RESTORE (+{INTEGRITY_RESTORE_AMOUNT}%)
+              </span>
+            </motion.div>
+          )}
         </div>
       </header>
 
       <div className="max-w-7xl mx-auto px-4 pt-6 space-y-8">
+
+        {/* ══ CYBER AVATAR CARD ══ */}
+        <AvatarStatsCard stats={rpgStats} totalXP={totalXP} theme={systemTheme} />
 
         {/* ══ IGNITION SWITCH ══ */}
         <IgnitionSwitch onIgnite={handleIgnite} />
@@ -1399,9 +1910,9 @@ export default function App() {
         {/* ══ SECTION 1: MISSION BUILDER ══ */}
         <section style={{ opacity: timerIsRunning ? 0.5 : 1, transition: 'opacity 0.4s', pointerEvents: timerIsRunning ? 'none' : 'auto' }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #00f5ff, transparent)' }} />
-            <span className="font-mono text-xs tracking-widest" style={{ color: '#00f5ff', textShadow: '0 0 8px #00f5ff' }}>◈ TODAY&apos;S MISSION BUILDER</span>
-            <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #00f5ff, transparent)' }} />
+            <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${systemTheme === 'god' ? '#ffd700' : '#00f5ff'}, transparent)` }} />
+            <span className="font-mono text-xs tracking-widest" style={{ color: systemTheme === 'god' ? '#ffd700' : '#00f5ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #00f5ff' }}>◈ TODAY&apos;S MISSION BUILDER</span>
+            <div className="h-px flex-1" style={{ background: `linear-gradient(270deg, ${systemTheme === 'god' ? '#ffd700' : '#00f5ff'}, transparent)` }} />
           </div>
 
           <div className="p-5 mb-5" style={{ background: 'linear-gradient(135deg, #0a1628, #060d1a)', border: '1px solid rgba(0,245,255,0.2)' }}>
@@ -1411,9 +1922,7 @@ export default function App() {
               <div className="lg:col-span-1">
                 <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET SUBJECT</label>
                 <div className="relative">
-                  <select
-                    value={formSubject}
-                    onChange={(e) => handleSubjectChange(e.target.value)}
+                  <select value={formSubject} onChange={(e) => handleSubjectChange(e.target.value)}
                     className="w-full px-3 py-2 font-mono text-sm focus:outline-none appearance-none pr-8"
                     style={{ background: 'rgba(0,245,255,0.06)', border: `1px solid ${SUBJECT_CONFIG[formSubject]?.color || '#00f5ff'}60`, color: SUBJECT_CONFIG[formSubject]?.color || '#00f5ff' }}
                   >
@@ -1425,7 +1934,7 @@ export default function App() {
                 </div>
               </div>
 
-              {/* ② Chapter */}
+              {/* ② Chapter — only shows unlocked/uncompleted chapters */}
               <div className="lg:col-span-2">
                 <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
                   TARGET CHAPTER <span className="text-gray-700">({availableChapters.length} remaining)</span>
@@ -1435,9 +1944,7 @@ export default function App() {
                     <div className="w-full px-3 py-2 font-mono text-xs" style={{ background: 'rgba(0,255,65,0.05)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}>✓ ALL CHAPTERS ANNIHILATED</div>
                   ) : (
                     <>
-                      <select
-                        value={formChapter}
-                        onChange={(e) => handleChapterChange(e.target.value)}
+                      <select value={formChapter} onChange={(e) => handleChapterChange(e.target.value)}
                         className="w-full px-3 py-2 font-mono text-sm focus:outline-none appearance-none pr-8"
                         style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.25)', color: '#e0f0ff' }}
                       >
@@ -1466,7 +1973,8 @@ export default function App() {
                     const dc  = DIFF_CONFIG[dk];
                     const sel = formDiff === dk;
                     return (
-                      <button key={dk} onClick={() => setFormDiff(dk)} className="flex-1 py-2 font-mono text-xs font-black transition-all"
+                      <button key={dk} onClick={() => setFormDiff(dk)}
+                        className="flex-1 py-2 font-mono text-xs font-black transition-all"
                         style={{ background: sel ? `${dc.color}20` : 'rgba(0,0,0,0.3)', border: `1px solid ${sel ? dc.color : '#1a2f4a'}`, color: sel ? dc.color : '#4a6080' }}>
                         {dk}
                       </button>
@@ -1479,17 +1987,11 @@ export default function App() {
               <div>
                 <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET PYQs</label>
                 <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={formPyqCount}
-                    onChange={(e) => setFormPyqCount(e.target.value)}
-                    min="0"
+                  <input type="number" value={formPyqCount} onChange={(e) => setFormPyqCount(e.target.value)} min="0"
                     className="w-16 px-2 py-2 font-mono text-sm text-center focus:outline-none"
                     style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.2)', color: '#e0f0ff' }}
                   />
-                  <button
-                    onClick={handleAddMission}
-                    disabled={!formChapter}
+                  <button onClick={handleAddMission} disabled={!formChapter}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 font-mono text-xs font-black tracking-wider transition-all"
                     style={{ background: formChapter ? 'rgba(0,245,255,0.15)' : 'rgba(20,30,40,0.4)', border: `1px solid ${formChapter ? 'rgba(0,245,255,0.6)' : 'rgba(0,245,255,0.1)'}`, color: formChapter ? '#00f5ff' : '#2a4a5a', cursor: formChapter ? 'pointer' : 'not-allowed' }}
                   >
@@ -1511,8 +2013,7 @@ export default function App() {
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {missions.map((task) => (
                   <MissionCard
-                    key={task.id}
-                    task={task}
+                    key={task.id} task={task}
                     onAnnihilate={handleAnnihilate}
                     onOpenTimer={handleOpenTimer}
                     onDelete={handleDeleteMission}
@@ -1553,11 +2054,9 @@ export default function App() {
                 <span className="font-mono text-xs" style={{ color: '#00ff41' }}>{completedChapters.length} / {TOTAL_CHAPTERS}</span>
               </div>
               <div className="relative h-8 overflow-hidden" style={{ background: '#050f08', border: '1px solid rgba(0,255,65,0.2)' }}>
-                <motion.div
-                  className="absolute left-0 top-0 h-full"
-                  style={{ background: 'linear-gradient(90deg, #00ff41, #00f5ff)', boxShadow: '0 0 15px rgba(0,255,65,0.8)' }}
-                  animate={{ width: `${progressPercent}%` }}
-                  transition={{ duration: 1 }}
+                <motion.div className="absolute left-0 top-0 h-full"
+                  style={{ background: systemTheme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : 'linear-gradient(90deg, #00ff41, #00f5ff)', boxShadow: systemTheme === 'god' ? '0 0 15px rgba(255,215,0,0.8)' : '0 0 15px rgba(0,255,65,0.8)' }}
+                  animate={{ width: `${progressPercent}%` }} transition={{ duration: 1 }}
                 />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <span className="font-mono text-xs font-black text-white" style={{ mixBlendMode: 'difference' }}>{Math.round(progressPercent)}% DOMINANCE</span>
@@ -1568,13 +2067,16 @@ export default function App() {
             <div className="mt-4 pt-4 border-t" style={{ borderColor: '#1a2f4a' }}>
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <Award size={14} color="#ff00ff" />
-                  <span className="font-mono text-xs font-black" style={{ color: '#ff00ff', textShadow: '0 0 8px #ff00ff' }}>{currentRank.rank}</span>
+                  <Award size={14} color={systemTheme === 'god' ? '#ffd700' : '#ff00ff'} />
+                  <span className="font-mono text-xs font-black" style={{ color: systemTheme === 'god' ? '#ffd700' : '#ff00ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #ff00ff' }}>{currentRank.rank}</span>
                 </div>
                 <span className="font-mono text-xs text-gray-500">{totalXP} / {nextRank.min} XP → {nextRank.rank}</span>
               </div>
               <div className="h-2.5 rounded-full overflow-hidden" style={{ background: '#0a0810', border: '1px solid rgba(255,0,255,0.2)' }}>
-                <motion.div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, #ff00ff, #ff69b4)', boxShadow: '0 0 10px rgba(255,0,255,0.8)' }} animate={{ width: `${rankProgressPercent}%` }} transition={{ duration: 1 }} />
+                <motion.div className="h-full rounded-full"
+                  style={{ background: systemTheme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : 'linear-gradient(90deg, #ff00ff, #ff69b4)', boxShadow: systemTheme === 'god' ? '0 0 10px rgba(255,215,0,0.8)' : '0 0 10px rgba(255,0,255,0.8)' }}
+                  animate={{ width: `${rankProgressPercent}%` }} transition={{ duration: 1 }}
+                />
               </div>
             </div>
           </div>
@@ -1594,48 +2096,60 @@ export default function App() {
           </section>
         )}
 
-        {/* ══ SECTION 3: THE SYLLABUS VAULT ══ */}
+        {/* ══ SECTION 3: THE EPISODE ROADMAP (replaces Syllabus Vault) ══ */}
         <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
           <div className="flex items-center gap-3 mb-4">
             <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #ff00ff, transparent)' }} />
-            <span className="font-mono text-xs tracking-widest" style={{ color: '#ff00ff', textShadow: '0 0 8px #ff00ff' }}>◈ THE SYLLABUS VAULT</span>
+            <span className="font-mono text-xs tracking-widest" style={{ color: '#ff00ff', textShadow: '0 0 8px #ff00ff' }}>◈ SEASON 1 — EPISODE ROADMAP</span>
             <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #ff00ff, transparent)' }} />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {Object.entries(SYLLABUS).map(([subject]) => {
-              const sc             = SUBJECT_CONFIG[subject];
-              const SubjectIcon    = sc.icon;
-              const sortedChapters = getSortedChaptersForSubject(subject);
-              const completedCount = sortedChapters.filter((ch) => completedChapters.includes(`${subject}::${ch.name}`)).length;
-              const totalCount     = sortedChapters.length;
-              const subjectFill    = (completedCount / totalCount) * 100;
+          <div className="mb-3 px-1">
+            <div className="font-mono text-gray-600" style={{ fontSize: 10 }}>
+              Complete each episode to unlock the next. Add chapters directly from here or use the Mission Builder above.
+            </div>
+          </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {EPISODES.map((episode) => {
+              const isLocked = !getEpisodeUnlocked(episode.id);
               return (
-                <motion.div key={subject} layout className="overflow-hidden" style={{ background: 'linear-gradient(135deg, #0a1628, #060d1a)', border: `1px solid ${sc.color}25` }}>
-                  <div className="px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${sc.color}20` }}>
-                    <div className="flex items-center gap-2 mb-2">
-                      <SubjectIcon size={18} style={{ color: sc.color, filter: `drop-shadow(0 0 6px ${sc.color})` }} />
-                      <span className="font-mono text-sm font-black tracking-widest" style={{ color: sc.color, textShadow: `0 0 10px ${sc.color}` }}>{sc.label}</span>
+                <EpisodeCard
+                  key={episode.id}
+                  episode={episode}
+                  isLocked={isLocked}
+                  completedChapters={completedChapters}
+                  onDeployChapter={handleDeployFromEpisode}
+                  deployedNames={deployedMissionRefs}
+                />
+              );
+            })}
+          </div>
+
+          {/* Per-subject progress summary below roadmap */}
+          <div className="mt-6 grid grid-cols-3 gap-3">
+            {Object.entries(SUBJECT_CONFIG).map(([subject, sc]) => {
+              const total     = SYLLABUS[subject].length;
+              const completed = SYLLABUS[subject].filter(ch => completedChapters.includes(`${subject}::${ch.name}`)).length;
+              const pct       = (completed / total) * 100;
+              const SubIcon   = sc.icon;
+              return (
+                <div key={subject} className="p-3 flex items-center gap-3"
+                  style={{ background: 'rgba(10,16,26,0.8)', border: `1px solid ${sc.color}20` }}>
+                  <SubIcon size={16} style={{ color: sc.color, flexShrink: 0 }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex justify-between items-center mb-1">
+                      <span className="font-mono text-xs font-black" style={{ color: sc.color }}>{sc.label}</span>
+                      <span className="font-mono" style={{ color: sc.color, fontSize: 9 }}>{completed}/{total}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
-                        <motion.div className="h-full rounded-full" style={{ background: sc.color, boxShadow: `0 0 6px ${sc.color}` }} animate={{ width: `${subjectFill}%` }} transition={{ duration: 0.8 }} />
-                      </div>
-                      <span className="font-mono" style={{ color: sc.color, fontSize: 10 }}>{completedCount}/{totalCount}</span>
-                    </div>
-                  </div>
-                  <div className="px-2 py-2 space-y-0.5">
-                    {sortedChapters.map((chapter, idx) => (
-                      <ChapterItem
-                        key={chapter.name}
-                        chapter={chapter}
-                        isCompleted={completedChapters.includes(`${subject}::${chapter.name}`)}
-                        animDelay={idx * 0.03}
+                    <div className="h-1 rounded-full overflow-hidden" style={{ background: '#0a1020' }}>
+                      <motion.div className="h-full rounded-full"
+                        style={{ background: sc.color, boxShadow: `0 0 4px ${sc.color}` }}
+                        animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }}
                       />
-                    ))}
+                    </div>
                   </div>
-                </motion.div>
+                </div>
               );
             })}
           </div>
@@ -1643,8 +2157,12 @@ export default function App() {
 
         {/* ══ FOOTER ══ */}
         <footer className="text-center py-6">
-          <div className="font-mono tracking-widest" style={{ color: '#1a2f4a', fontSize: 10 }}>MHT-CET NEXUS • {TOTAL_CHAPTERS} CHAPTERS • NEURO-WARFARE PROTOCOL • ALL SYSTEMS OPERATIONAL</div>
-          <div className="font-mono mt-1" style={{ color: '#111c2a', fontSize: 9 }}>PERSISTENCE: localStorage • VIGILANCE: Active • VELOCITY STREAK: 4-min window • XP: Real-time</div>
+          <div className="font-mono tracking-widest" style={{ color: systemTheme === 'god' ? 'rgba(255,215,0,0.2)' : '#1a2f4a', fontSize: 10 }}>
+            MHT-CET NEXUS • NEURAL-WARFARE: SEASON 1 • {TOTAL_CHAPTERS} CHAPTERS • 7 EPISODES
+          </div>
+          <div className="font-mono mt-1" style={{ color: '#111c2a', fontSize: 9 }}>
+            PERSISTENCE: localStorage • THEME: {systemTheme.toUpperCase()} • LEVEL: {userLevel} • SYS INTEGRITY: {Math.round(systemIntegrity)}%
+          </div>
         </footer>
 
       </div>
