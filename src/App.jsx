@@ -147,13 +147,13 @@ const SUBJECT_PRINT_COLORS = {
 };
 
 const RANK_THRESHOLDS = [
-  { rank: 'CADET',       min: 0,     max: 500   },
-  { rank: 'RECRUIT',     min: 500,   max: 1200  },
-  { rank: 'SPECIALIST',  min: 1200,  max: 2500  },
-  { rank: 'OPERATIVE',   min: 2500,  max: 4500  },
-  { rank: 'COMMANDER',   min: 4500,  max: 7000  },
-  { rank: 'WARLORD',     min: 7000,  max: 10000 },
-  { rank: 'NEXUS ELITE', min: 10000, max: 99999 },
+  { rank: 'CADET',       min: 0,     max: 5000   },
+  { rank: 'RECRUIT',     min: 5000,   max: 12000  },
+  { rank: 'SPECIALIST',  min: 12000,  max: 25000  },
+  { rank: 'OPERATIVE',   min: 25000,  max: 45000  },
+  { rank: 'COMMANDER',   min: 45000,  max: 70000  },
+  { rank: 'WARLORD',     min: 70000,  max: 100000 },
+  { rank: 'NEXUS ELITE', min: 100000, max: 999999 },
 ];
 
 const TIMER_PRESETS = [
@@ -163,10 +163,10 @@ const TIMER_PRESETS = [
 ];
 
 const LEVEL_THRESHOLDS = [
-  0, 200, 500, 900, 1400,
-  2000, 2800, 3700, 4700, 5800,
-  7100, 8600, 10300, 12200, 14300,
-  16700, 19400, 22400, 25700, 99999,
+  0, 2000, 5000, 9000, 14000,
+  20000, 28000, 37000, 47000, 58000,
+  71000, 86000, 103000, 122000, 143000,
+  167000, 194000, 224000, 257000, 999999,
 ];
 
 // Boot sequence lines
