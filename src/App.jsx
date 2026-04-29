@@ -7,11 +7,12 @@ import {
   Award, AlertTriangle, BookOpen, Atom, FlaskConical,
   Calculator, X, Flame, Radio, Skull, Eye, EyeOff,
   FolderOpen, Download, Archive, Lock, Star, Cpu,
-  Activity, TrendingUp, Wifi, WifiOff,
+  Activity, TrendingUp, Wifi, WifiOff, Coffee, Film,
+  Zap as ZapIcon,
 } from 'lucide-react';
 
 // ═══════════════════════════════════════════════════════════════════
-// SECTION 1 — CONSTANTS (ALL defined at module scope, above everything)
+// SECTION 1 — CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
 
 const SYLLABUS = {
@@ -44,59 +45,41 @@ const SYLLABUS = {
   ],
 };
 
-// ── Season 1 Episodes: 7 episodes × 3 chapters ──────────────────────────────
-// Each episode has chapters from across subjects, grouped for dramatic reveal.
-// Episodes unlock sequentially when the prior episode reaches 100% completion.
 const EPISODES = [
   {
-    id: 1,
-    title: 'The Atomic Awakening',
-    subtitle: 'Season Premiere',
-    color: '#00f5ff',
+    id: 1, title: 'The Atomic Awakening', subtitle: 'Season Premiere', color: '#00f5ff',
     chapters: [
-      { subject: 'Physics',     name: 'Structure of Atom'           },
-      { subject: 'Chemistry',   name: 'Atomic Structure'            },
-      { subject: 'Chemistry',   name: 'Basic Concepts of Chemistry' },
+      { subject: 'Physics',   name: 'Structure of Atom'           },
+      { subject: 'Chemistry', name: 'Atomic Structure'            },
+      { subject: 'Chemistry', name: 'Basic Concepts of Chemistry' },
     ],
   },
   {
-    id: 2,
-    title: 'Thermodynamic Reckoning',
-    subtitle: 'The Heat Protocol',
-    color: '#ff6b00',
+    id: 2, title: 'Thermodynamic Reckoning', subtitle: 'The Heat Protocol', color: '#ff6b00',
     chapters: [
-      { subject: 'Chemistry',   name: 'Chemical Thermodynamics'     },
-      { subject: 'Physics',     name: 'Kinetic Theory of Gases'     },
-      { subject: 'Mathematics', name: 'Pair of Lines'               },
+      { subject: 'Chemistry',   name: 'Chemical Thermodynamics' },
+      { subject: 'Physics',     name: 'Kinetic Theory of Gases' },
+      { subject: 'Mathematics', name: 'Pair of Lines'           },
     ],
   },
   {
-    id: 3,
-    title: 'Equilibrium & Chaos',
-    subtitle: 'The Balance Breaks',
-    color: '#ff00ff',
+    id: 3, title: 'Equilibrium & Chaos', subtitle: 'The Balance Breaks', color: '#ff00ff',
     chapters: [
-      { subject: 'Chemistry',   name: 'Ionic Equilibrium'           },
-      { subject: 'Chemistry',   name: 'Solutions'                   },
-      { subject: 'Mathematics', name: 'Line & Plane'                },
+      { subject: 'Chemistry',   name: 'Ionic Equilibrium' },
+      { subject: 'Chemistry',   name: 'Solutions'         },
+      { subject: 'Mathematics', name: 'Line & Plane'      },
     ],
   },
   {
-    id: 4,
-    title: 'Electrochemical Storm',
-    subtitle: 'Current Wars',
-    color: '#ffff00',
+    id: 4, title: 'Electrochemical Storm', subtitle: 'Current Wars', color: '#ffff00',
     chapters: [
-      { subject: 'Chemistry',   name: 'Electrochemistry'            },
-      { subject: 'Physics',     name: 'Semiconductors'              },
-      { subject: 'Physics',     name: 'Rotational Dynamics'         },
+      { subject: 'Chemistry', name: 'Electrochemistry'    },
+      { subject: 'Physics',   name: 'Semiconductors'      },
+      { subject: 'Physics',   name: 'Rotational Dynamics' },
     ],
   },
   {
-    id: 5,
-    title: 'Derivatives of Destruction',
-    subtitle: 'Calculus Apocalypse',
-    color: '#00ff41',
+    id: 5, title: 'Derivatives of Destruction', subtitle: 'Calculus Apocalypse', color: '#00ff41',
     chapters: [
       { subject: 'Mathematics', name: 'Differentiation'             },
       { subject: 'Mathematics', name: 'Applications of Derivatives' },
@@ -104,25 +87,19 @@ const EPISODES = [
     ],
   },
   {
-    id: 6,
-    title: 'Organic Uprising',
-    subtitle: 'Carbon Strikes Back',
-    color: '#7fff00',
+    id: 6, title: 'Organic Uprising', subtitle: 'Carbon Strikes Back', color: '#7fff00',
     chapters: [
-      { subject: 'Chemistry',   name: 'Halogen Derivatives'         },
-      { subject: 'Chemistry',   name: 'Alcohols, Phenols and Ethers'},
-      { subject: 'Chemistry',   name: 'Amines'                      },
+      { subject: 'Chemistry', name: 'Halogen Derivatives'          },
+      { subject: 'Chemistry', name: 'Alcohols, Phenols and Ethers' },
+      { subject: 'Chemistry', name: 'Amines'                       },
     ],
   },
   {
-    id: 7,
-    title: 'The Final Nexus',
-    subtitle: 'Season Finale',
-    color: '#ffa500',
+    id: 7, title: 'The Final Nexus', subtitle: 'Season Finale', color: '#ffa500',
     chapters: [
-      { subject: 'Chemistry',   name: 'Transition Elements'         },
-      { subject: 'Physics',     name: 'Dual Nature of Radiation'    },
-      { subject: 'Mathematics', name: 'Differential Equations'      },
+      { subject: 'Chemistry',   name: 'Transition Elements'      },
+      { subject: 'Physics',     name: 'Dual Nature of Radiation' },
+      { subject: 'Mathematics', name: 'Differential Equations'   },
     ],
   },
 ];
@@ -135,11 +112,21 @@ const POMODORO_BREAK     = 5  * 60;
 const COMBO_WINDOW_MS    = 4  * 60 * 1000;
 const VIGILANCE_IDLE_MS  = 10 * 60 * 1000;
 const COMBO_MULTIPLIERS  = [1, 2, 5, 10, 20, 50];
-// Loss-aversion: decay fires every 30 min if no pomodoro started in 1hr
 const INTEGRITY_DECAY_INTERVAL_MS = 30 * 60 * 1000;
 const INTEGRITY_IDLE_THRESHOLD_MS = 60 * 60 * 1000;
 const INTEGRITY_DECAY_AMOUNT      = 15;
 const INTEGRITY_RESTORE_AMOUNT    = 20;
+
+// Power Hour: 90 minutes of 2x XP
+const POWER_HOUR_DURATION_MS = 90 * 60 * 1000;
+const POWER_HOUR_MULTIPLIER  = 2;
+
+// Entertainment: 1 PYQ = 2 earned minutes
+const LEISURE_MINUTES_PER_PYQ = 2;
+
+// Micro-Mission: 2 PYQs in 10 minutes
+const MICRO_MISSION_TARGET_PYQS    = 2;
+const MICRO_MISSION_DURATION_SECS  = 10 * 60;
 
 const DIFF_CONFIG = {
   H: { label: 'BOSS BATTLE', color: '#ff00ff', bg: 'rgba(255,0,255,0.1)',  icon: Sword  },
@@ -175,12 +162,18 @@ const TIMER_PRESETS = [
   { label: '120m', seconds: 120 * 60 },
 ];
 
-// ── RPG Level thresholds ─────────────────────────────────────────────────────
 const LEVEL_THRESHOLDS = [
-  0, 200, 500, 900, 1400,          // Levels 1-5  → Dim Mode
-  2000, 2800, 3700, 4700, 5800,   // Levels 6-10
-  7100, 8600, 10300, 12200, 14300, // Levels 11-15 → Neon Overload
-  16700, 19400, 22400, 25700, 99999, // Levels 16+ → God Mode
+  0, 200, 500, 900, 1400,
+  2000, 2800, 3700, 4700, 5800,
+  7100, 8600, 10300, 12200, 14300,
+  16700, 19400, 22400, 25700, 99999,
+];
+
+// Boot sequence lines
+const BOOT_LINES = [
+  'System waking...',
+  'Neural Link Syncing...',
+  "Let's begin the Story of the Greatest.",
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -202,18 +195,65 @@ function getUserLevel(xp) {
 }
 
 function getLevelProgress(xp) {
-  const level = getUserLevel(xp);
+  const level           = getUserLevel(xp);
   const currentThreshold = LEVEL_THRESHOLDS[level - 1] || 0;
   const nextThreshold    = LEVEL_THRESHOLDS[level]     || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
   const progress = ((xp - currentThreshold) / Math.max(nextThreshold - currentThreshold, 1)) * 100;
   return Math.min(100, Math.max(0, progress));
 }
 
-// Returns the visual theme tier based on user level
 function getSystemTheme(level) {
   if (level >= 16) return 'god';
   if (level >= 6)  return 'neon';
   return 'dim';
+}
+
+/**
+ * Returns an ISO date string "YYYY-MM-DD" for the current "game day".
+ * A game day starts at 06:00 AM and ends at 05:59:59 AM the next calendar day.
+ * So 2 AM → still the previous game day. 6 AM → new game day.
+ */
+function getGameDay() {
+  const now = new Date();
+  // If before 6 AM, the game day is "yesterday"
+  if (now.getHours() < 6) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().slice(0, 10);
+  }
+  return now.toISOString().slice(0, 10);
+}
+
+/**
+ * Returns true if `lastLoginEpoch` belongs to a different game day than now.
+ * Handles the 6 AM boundary correctly.
+ */
+function isNewGameDay(lastLoginEpoch) {
+  if (!lastLoginEpoch) return true;
+  const lastGameDay = (() => {
+    const d = new Date(lastLoginEpoch);
+    if (d.getHours() < 6) {
+      const prev = new Date(d);
+      prev.setDate(prev.getDate() - 1);
+      return prev.toISOString().slice(0, 10);
+    }
+    return d.toISOString().slice(0, 10);
+  })();
+  return lastGameDay !== getGameDay();
+}
+
+/**
+ * Returns true if the Power Hour window is still active.
+ * powerHourEnd is an epoch ms timestamp.
+ */
+function isPowerHourActive(powerHourEnd) {
+  if (!powerHourEnd) return false;
+  return Date.now() < powerHourEnd;
+}
+
+function getPowerHourSecondsLeft(powerHourEnd) {
+  if (!powerHourEnd) return 0;
+  return Math.max(0, Math.floor((powerHourEnd - Date.now()) / 1000));
 }
 
 const LS = {
@@ -249,6 +289,13 @@ function fireGodModeConfetti() {
   setTimeout(() => confetti({ particleCount: 80,  spread: 140, origin: { y: 0.2 }, colors }), 500);
 }
 
+function firePowerHourConfetti() {
+  const colors = ['#ffff00', '#ff6b00', '#fff700', '#ffa500'];
+  confetti({ particleCount: 200, spread: 110, origin: { y: 0.5 }, colors, scalar: 1.6 });
+  setTimeout(() => confetti({ particleCount: 80, angle: 115, spread: 70, origin: { x: 0 }, colors }), 200);
+  setTimeout(() => confetti({ particleCount: 80, angle: 65,  spread: 70, origin: { x: 1 }, colors }), 350);
+}
+
 function fireNeuralConfetti() {
   const colors = ['#00f5ff', '#00ff41', '#ffffff', '#7fff00'];
   confetti({ particleCount: 200, spread: 100, origin: { y: 0.5 }, colors, scalar: 1.5 });
@@ -276,6 +323,29 @@ function playNeuralSync() {
   } catch {}
 }
 
+function playBootSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const note = (freq, t, dur, type = 'sine') => {
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, ctx.currentTime + t);
+      g.gain.setValueAtTime(0.2, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + dur);
+      osc.start(ctx.currentTime + t);
+      osc.stop(ctx.currentTime + t + dur);
+    };
+    // Dramatic ascending boot tones
+    note(110, 0, 0.3, 'sine');
+    note(220, 0.3, 0.3, 'sine');
+    note(440, 0.6, 0.3, 'sine');
+    note(880, 0.9, 0.5, 'square');
+    note(1320, 1.4, 0.8, 'sine');
+  } catch {}
+}
+
 function playComboShatter() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -291,11 +361,10 @@ function playComboShatter() {
   } catch {}
 }
 
-// Returns CSS string for the glitch animation based on integrity level
 function getGlitchStyles(integrity) {
   if (integrity >= 50) return '';
-  const intensity = (50 - integrity) / 50; // 0 → 1 as integrity 50 → 0
-  const shakeAmt  = Math.round(intensity * 4);
+  const intensity   = (50 - integrity) / 50;
+  const shakeAmt    = Math.round(intensity * 4);
   const scanOpacity = (intensity * 0.12).toFixed(3);
   return `
     @keyframes glitch-shake {
@@ -368,11 +437,520 @@ function useVelocityCombo(missionId) {
   return { comboLevel, solvedCount, currentMultiplier, incrementSolved, comboExpired };
 }
 
+// ─── useGlitchType: produces a character-by-character typewriter/glitch effect ──
+function useGlitchType(targetText, speed = 40, startDelay = 0) {
+  const [displayed, setDisplayed]   = useState('');
+  const [isDone,    setIsDone]      = useState(false);
+  const GLITCH_CHARS = '░▒▓█▄▌▐▀ⅠⅡⅢ▲▼◆◇';
+
+  useEffect(() => {
+    setDisplayed('');
+    setIsDone(false);
+    let idx       = 0;
+    let glitchIdx = 0;
+    let startTimer;
+    let glitchTimer;
+    let revealTimer;
+
+    startTimer = setTimeout(() => {
+      // Phase 1: rapid glitch characters
+      glitchTimer = setInterval(() => {
+        const rand = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
+        setDisplayed((prev) => {
+          // Build a string of glitch chars up to current reveal length + some extra
+          const glitchLen = Math.min(idx + 3, targetText.length);
+          return targetText.slice(0, idx) + Array.from({ length: glitchLen - idx }, () =>
+            GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]
+          ).join('') + rand;
+        });
+        glitchIdx++;
+        if (glitchIdx > 4) {
+          clearInterval(glitchTimer);
+          // Phase 2: reveal characters one by one
+          revealTimer = setInterval(() => {
+            if (idx < targetText.length) {
+              idx++;
+              setDisplayed(targetText.slice(0, idx));
+            } else {
+              clearInterval(revealTimer);
+              setIsDone(true);
+            }
+          }, speed);
+        }
+      }, 40);
+    }, startDelay);
+
+    return () => {
+      clearTimeout(startTimer);
+      clearInterval(glitchTimer);
+      clearInterval(revealTimer);
+    };
+  }, [targetText, speed, startDelay]);
+
+  return { displayed, isDone };
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 4 — SMALL / STATELESS UI COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-function XPFloatAnimation({ xpAmount, hasVelocityBonus, onAnimationDone, theme }) {
+// ── BootLine: Single animated boot text line ────────────────────────────────
+function BootLine({ text, startDelay, onDone, isLast }) {
+  const { displayed, isDone } = useGlitchType(text, 35, startDelay);
+
+  useEffect(() => {
+    if (isDone && onDone) onDone();
+  }, [isDone, onDone]);
+
+  const color = isLast ? '#00f5ff' : '#00ff41';
+  const glow  = isLast ? '#00f5ff' : '#00ff41';
+
+  return (
+    <div className="flex items-center gap-3 font-mono" style={{ fontSize: isLast ? 22 : 16, minHeight: 32 }}>
+      {isDone ? (
+        <span style={{ color: '#00ff41', fontSize: 14 }}>✓</span>
+      ) : (
+        <motion.span animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 0.5 }}
+          style={{ color: '#00ff41', fontSize: 14 }}>█</motion.span>
+      )}
+      <span style={{
+        color,
+        textShadow: isDone ? `0 0 12px ${glow}` : 'none',
+        fontWeight: isLast ? 900 : 400,
+        letterSpacing: isLast ? '0.08em' : '0.04em',
+      }}>{displayed}</span>
+    </div>
+  );
+}
+
+// ── BootSequence: Full-screen cinematic intro ───────────────────────────────
+function BootSequence({ onInitialize }) {
+  const [linesDone,     setLinesDone]     = useState(0);
+  const [showButton,    setShowButton]    = useState(false);
+  const [shatterActive, setShatterActive] = useState(false);
+  const [shatterDone,   setShatterDone]   = useState(false);
+
+  // Each line's start delay (ms): stagger them after the previous finishes
+  // Line 0: 400ms, Line 1: ~1600ms, Line 2: ~3200ms
+  const LINE_DELAYS = [400, 1800, 3600];
+  const LINE_DURATIONS = [1000, 1100, 1200]; // approx typing time
+
+  useEffect(() => {
+    // Show button after all 3 lines are done (add extra buffer)
+    const timer = setTimeout(() => setShowButton(true), LINE_DELAYS[2] + LINE_DURATIONS[2] + 400);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    playBootSound();
+  }, []);
+
+  const handleInitialize = () => {
+    setShatterActive(true);
+    // After shatter animation, call onInitialize
+    setTimeout(() => {
+      setShatterDone(true);
+      setTimeout(onInitialize, 400);
+    }, 900);
+  };
+
+  if (shatterDone) return null;
+
+  return (
+    <motion.div
+      className="fixed inset-0 z-[99999] flex flex-col items-center justify-center"
+      style={{ background: '#000' }}
+      animate={shatterActive ? { opacity: 0, scale: 1.06 } : { opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Scanline overlay */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px)',
+      }} />
+
+      {/* CRT vignette */}
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%)',
+      }} />
+
+      {/* Top-left corner decoration */}
+      <div className="absolute top-8 left-8 font-mono text-green-900" style={{ fontSize: 10, letterSpacing: '0.2em' }}>
+        MHT-CET NEXUS v4.0 // NEURAL OS
+      </div>
+      <div className="absolute top-8 right-8 font-mono text-green-900" style={{ fontSize: 10, letterSpacing: '0.2em' }}>
+        {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+      </div>
+
+      {/* Main content */}
+      <div className="relative z-10 w-full max-w-2xl px-8">
+        {/* Logo */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1, duration: 0.6 }}
+          className="mb-12 text-center"
+        >
+          <div className="font-mono text-5xl font-black tracking-widest mb-2"
+            style={{ color: '#00ff41', textShadow: '0 0 30px #00ff41, 0 0 60px #00ff4160' }}>
+            MHT-CET NEXUS
+          </div>
+          <div className="font-mono text-xs text-green-900 tracking-widest">
+            ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+          </div>
+        </motion.div>
+
+        {/* Boot lines */}
+        <div className="space-y-4 mb-12">
+          <BootLine text={BOOT_LINES[0]} startDelay={LINE_DELAYS[0]} isLast={false} />
+          <BootLine text={BOOT_LINES[1]} startDelay={LINE_DELAYS[1]} isLast={false} />
+          <BootLine text={BOOT_LINES[2]} startDelay={LINE_DELAYS[2]} isLast={true}  />
+        </div>
+
+        {/* Initialize button */}
+        <AnimatePresence>
+          {showButton && !shatterActive && (
+            <motion.div
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.2 }}
+              transition={{ type: 'spring', damping: 18 }}
+              className="flex justify-center"
+            >
+              <motion.button
+                onClick={handleInitialize}
+                animate={{ boxShadow: [
+                  '0 0 20px rgba(0,245,255,0.4), 0 0 40px rgba(0,245,255,0.2)',
+                  '0 0 40px rgba(0,245,255,0.8), 0 0 80px rgba(0,245,255,0.4)',
+                  '0 0 20px rgba(0,245,255,0.4), 0 0 40px rgba(0,245,255,0.2)',
+                ]}}
+                transition={{ repeat: Infinity, duration: 1.8 }}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
+                className="px-10 py-5 font-mono font-black tracking-widest text-base"
+                style={{
+                  background: 'rgba(0,245,255,0.1)',
+                  border: '2px solid #00f5ff',
+                  color: '#00f5ff',
+                  letterSpacing: '0.15em',
+                }}
+              >
+                ⚡ INITIALIZE NEURAL GRIND
+              </motion.button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Progress bar at bottom */}
+        <motion.div className="mt-16">
+          <div className="font-mono text-green-900 text-center mb-2" style={{ fontSize: 9, letterSpacing: '0.3em' }}>
+            NEURAL OS LOADING
+          </div>
+          <div className="h-0.5 w-full" style={{ background: '#0a1a0a' }}>
+            <motion.div
+              className="h-full"
+              style={{ background: '#00ff41', boxShadow: '0 0 8px #00ff41' }}
+              initial={{ width: '0%' }}
+              animate={{ width: '100%' }}
+              transition={{ duration: LINE_DELAYS[2] / 1000 + LINE_DURATIONS[2] / 1000, ease: 'linear' }}
+            />
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ── PowerHourBanner ─────────────────────────────────────────────────────────
+function PowerHourBanner({ powerHourEnd }) {
+  const [secsLeft, setSecsLeft] = useState(() => getPowerHourSecondsLeft(powerHourEnd));
+
+  useEffect(() => {
+    const id = setInterval(() => {
+      const s = getPowerHourSecondsLeft(powerHourEnd);
+      setSecsLeft(s);
+      if (s <= 0) clearInterval(id);
+    }, 1000);
+    return () => clearInterval(id);
+  }, [powerHourEnd]);
+
+  if (secsLeft <= 0) return null;
+
+  const mins = String(Math.floor(secsLeft / 60)).padStart(2, '0');
+  const secs = String(secsLeft % 60).padStart(2, '0');
+
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="overflow-hidden"
+    >
+      <motion.div
+        animate={{
+          background: [
+            'linear-gradient(90deg, rgba(255,215,0,0.15), rgba(255,107,0,0.15), rgba(255,215,0,0.15))',
+            'linear-gradient(90deg, rgba(255,107,0,0.15), rgba(255,215,0,0.15), rgba(255,107,0,0.15))',
+          ],
+        }}
+        transition={{ repeat: Infinity, duration: 2 }}
+        className="px-4 py-2 flex items-center justify-between"
+        style={{ border: '1px solid rgba(255,215,0,0.4)' }}
+      >
+        <div className="flex items-center gap-3">
+          <motion.div animate={{ scale: [1, 1.3, 1], rotate: [0, 10, -10, 0] }} transition={{ repeat: Infinity, duration: 1 }}>
+            <Zap size={16} color="#ffd700" />
+          </motion.div>
+          <span className="font-mono text-xs font-black tracking-widest" style={{ color: '#ffd700', textShadow: '0 0 10px #ffd700' }}>
+            ⚡ POWER HOUR ACTIVE — ALL XP DOUBLED (2×)
+          </span>
+        </div>
+        <div className="font-mono font-black text-sm" style={{ color: '#ff6b00', textShadow: '0 0 8px #ff6b00' }}>
+          {mins}:{secs}
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── EntertainmentClearance ──────────────────────────────────────────────────
+function EntertainmentClearance({ dailyPyqsSolved, onRedeem }) {
+  const totalEarned  = dailyPyqsSolved * LEISURE_MINUTES_PER_PYQ;
+  const [redeemed,   setRedeemed]   = useState(() => LS.get('daily_leisure_redeemed', 0));
+  const [draining,   setDraining]   = useState(false);
+  const available = Math.max(0, totalEarned - redeemed);
+
+  // Sync redeemed to LS
+  useEffect(() => {
+    LS.set('daily_leisure_redeemed', redeemed);
+  }, [redeemed]);
+
+  const handleRedeem = () => {
+    if (available <= 0) return;
+    setDraining(true);
+    setTimeout(() => {
+      setRedeemed((prev) => prev + available);
+      setDraining(false);
+      if (onRedeem) onRedeem(available);
+    }, 1200);
+  };
+
+  const pct = totalEarned > 0 ? Math.min(100, (available / totalEarned) * 100) : 0;
+
+  return (
+    <div className="p-4" style={{
+      background: 'linear-gradient(135deg, rgba(15,5,25,0.95), rgba(8,3,15,0.95))',
+      border: '1px solid rgba(148,0,255,0.3)',
+    }}>
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Film size={14} color="#b44fff" />
+          <span className="font-mono text-xs font-black tracking-widest" style={{ color: '#b44fff' }}>
+            ENTERTAINMENT CLEARANCE
+          </span>
+        </div>
+        <div className="font-mono text-xs" style={{ color: 'rgba(148,0,255,0.6)', fontSize: 9 }}>
+          1 PYQ = {LEISURE_MINUTES_PER_PYQ} MIN
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3 mb-3">
+        <div className="flex-1">
+          <div className="flex justify-between mb-1">
+            <span className="font-mono" style={{ color: '#b44fff', fontSize: 9 }}>LEISURE BALANCE</span>
+            <span className="font-mono font-black" style={{ color: '#b44fff', fontSize: 10 }}>
+              {available} min available
+            </span>
+          </div>
+          <div className="h-3 rounded-none overflow-hidden" style={{ background: '#0a0515' }}>
+            <motion.div
+              className="h-full"
+              style={{ background: 'linear-gradient(90deg, #b44fff, #7722ff)', boxShadow: '0 0 8px #b44fff' }}
+              animate={{ width: draining ? '0%' : `${pct}%` }}
+              transition={{ duration: draining ? 1.2 : 0.5 }}
+            />
+          </div>
+          <div className="flex justify-between mt-0.5">
+            <span className="font-mono text-gray-700" style={{ fontSize: 8 }}>0 min</span>
+            <span className="font-mono text-gray-700" style={{ fontSize: 8 }}>{totalEarned} min EARNED ({dailyPyqsSolved} PYQs today)</span>
+          </div>
+        </div>
+        <motion.button
+          whileHover={{ scale: 1.04 }}
+          whileTap={{ scale: 0.94 }}
+          onClick={handleRedeem}
+          disabled={available <= 0 || draining}
+          className="px-4 py-2 font-mono text-xs font-black whitespace-nowrap"
+          style={{
+            background: available > 0 ? 'rgba(180,79,255,0.15)' : 'rgba(30,10,50,0.4)',
+            border: `1px solid ${available > 0 ? '#b44fff' : 'rgba(80,20,120,0.3)'}`,
+            color: available > 0 ? '#b44fff' : '#3a1f5a',
+            cursor: available > 0 ? 'pointer' : 'not-allowed',
+          }}
+        >
+          {draining ? '▓▒░ DRAINING...' : available > 0 ? '▶ REDEEM LEISURE' : 'NONE EARNED'}
+        </motion.button>
+      </div>
+
+      {redeemed > 0 && (
+        <div className="font-mono text-xs text-center" style={{ color: 'rgba(100,60,150,0.6)', fontSize: 9 }}>
+          {redeemed} MIN REDEEMED TODAY — GUILT-FREE MODE ACTIVATED ✓
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── MicroMissionModal ───────────────────────────────────────────────────────
+function MicroMissionModal({ onComplete, onAbort }) {
+  const [pyqsDone,     setPyqsDone]     = useState(0);
+  const [secsLeft,     setSecsLeft]     = useState(MICRO_MISSION_DURATION_SECS);
+  const [isRunning,    setIsRunning]    = useState(false);
+  const [isComplete,   setIsComplete]   = useState(false);
+  const [isFailed,     setIsFailed]     = useState(false);
+  const tickRef = useRef(null);
+
+  const start = () => setIsRunning(true);
+
+  useEffect(() => {
+    if (!isRunning) return;
+    tickRef.current = setInterval(() => {
+      setSecsLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(tickRef.current);
+          if (pyqsDone < MICRO_MISSION_TARGET_PYQS) setIsFailed(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(tickRef.current);
+  }, [isRunning, pyqsDone]);
+
+  const handleAddPYQ = () => {
+    if (!isRunning || isComplete || isFailed) return;
+    const next = pyqsDone + 1;
+    setPyqsDone(next);
+    if (next >= MICRO_MISSION_TARGET_PYQS) {
+      clearInterval(tickRef.current);
+      setIsComplete(true);
+      fireNeuralConfetti();
+      playNeuralSync();
+    }
+  };
+
+  const mins = String(Math.floor(secsLeft / 60)).padStart(2, '0');
+  const secs = String(secsLeft % 60).padStart(2, '0');
+  const pct  = (pyqsDone / MICRO_MISSION_TARGET_PYQS) * 100;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9992] flex items-center justify-center"
+      style={{ background: 'rgba(0,0,0,0.9)', backdropFilter: 'blur(8px)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.85, y: 30 }} animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.85, y: 30 }}
+        transition={{ type: 'spring', damping: 20 }}
+        className="relative text-center px-10 py-8"
+        style={{
+          background: 'linear-gradient(135deg, #0a0012, #050008)',
+          border: '2px solid #ff00ff',
+          boxShadow: '0 0 40px rgba(255,0,255,0.4), 0 0 80px rgba(255,0,255,0.15)',
+          minWidth: 380,
+        }}
+      >
+        <button onClick={onAbort} className="absolute top-3 right-3 text-gray-600 hover:text-white">
+          <X size={18} />
+        </button>
+
+        {!isComplete && !isFailed && (
+          <>
+            <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}>
+              <AlertTriangle size={32} color="#ff00ff" className="mx-auto mb-3" />
+            </motion.div>
+            <div className="font-mono text-lg font-black tracking-widest mb-1" style={{ color: '#ff00ff', textShadow: '0 0 16px #ff00ff' }}>
+              MICRO-MISSION
+            </div>
+            <div className="font-mono text-sm text-gray-400 mb-1">LIMBIC OVERRIDE PROTOCOL</div>
+            <div className="font-mono text-xs text-gray-600 mb-6">
+              Solve exactly {MICRO_MISSION_TARGET_PYQS} PYQs within {MICRO_MISSION_DURATION_SECS / 60} minutes.
+            </div>
+
+            {/* Timer */}
+            <div className="font-mono text-5xl font-black mb-2" style={{ color: secsLeft < 60 ? '#ff0000' : '#ff6b00', textShadow: `0 0 20px ${secsLeft < 60 ? '#ff0000' : '#ff6b00'}` }}>
+              {mins}:{secs}
+            </div>
+
+            {/* PYQ progress */}
+            <div className="mb-5">
+              <div className="h-3 mx-auto w-48 rounded-full overflow-hidden mb-2" style={{ background: '#1a0020' }}>
+                <motion.div className="h-full rounded-full"
+                  style={{ background: 'linear-gradient(90deg, #ff00ff, #ff69b4)', boxShadow: '0 0 8px #ff00ff' }}
+                  animate={{ width: `${pct}%` }} transition={{ duration: 0.3 }}
+                />
+              </div>
+              <div className="font-mono text-sm font-black" style={{ color: '#ff00ff' }}>
+                {pyqsDone} / {MICRO_MISSION_TARGET_PYQS} PYQs SOLVED
+              </div>
+            </div>
+
+            {!isRunning ? (
+              <motion.button whileTap={{ scale: 0.95 }} onClick={start}
+                className="w-full py-3 font-mono text-sm font-black tracking-widest"
+                style={{ background: 'rgba(255,0,255,0.15)', border: '1px solid #ff00ff', color: '#ff00ff' }}
+              >▶ BEGIN OVERRIDE</motion.button>
+            ) : (
+              <motion.button
+                whileTap={{ scale: 0.88 }}
+                onClick={handleAddPYQ}
+                animate={{ scale: [1, 1.02, 1] }}
+                transition={{ repeat: Infinity, duration: 0.8 }}
+                className="w-full py-4 font-mono text-sm font-black tracking-widest"
+                style={{ background: 'rgba(255,0,255,0.2)', border: '2px solid #ff00ff', color: '#ff00ff', boxShadow: '0 0 20px rgba(255,0,255,0.3)' }}
+              >✓ SOLVED ONE PYQ (+1)</motion.button>
+            )}
+          </>
+        )}
+
+        {isComplete && (
+          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <CheckCircle size={40} color="#00ff41" className="mx-auto mb-3" />
+            <div className="font-mono text-xl font-black tracking-widest mb-2" style={{ color: '#00ff41', textShadow: '0 0 20px #00ff41' }}>
+              NEURAL LINK RESTORED
+            </div>
+            <div className="font-mono text-sm text-gray-400 mb-6">
+              Micro-mission complete. Resistance broken. Resume your main mission.
+            </div>
+            <button onClick={onComplete}
+              className="w-full py-3 font-mono font-black text-sm"
+              style={{ background: 'rgba(0,255,65,0.15)', border: '1px solid #00ff41', color: '#00ff41' }}
+            >↩ RESUME MAIN MISSION</button>
+          </motion.div>
+        )}
+
+        {isFailed && (
+          <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+            <Skull size={40} color="#ff0000" className="mx-auto mb-3" />
+            <div className="font-mono text-xl font-black tracking-widest mb-2" style={{ color: '#ff0000', textShadow: '0 0 20px #ff0000' }}>
+              OVERRIDE FAILED
+            </div>
+            <div className="font-mono text-sm text-gray-500 mb-6">
+              Time expired. The mission continues anyway — get back in.
+            </div>
+            <button onClick={onAbort}
+              className="w-full py-3 font-mono font-black text-sm"
+              style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid #ff0000', color: '#ff4444' }}
+            >↩ RETURN TO BASE</button>
+          </motion.div>
+        )}
+      </motion.div>
+    </motion.div>
+  );
+}
+
+// ── XPFloatAnimation ────────────────────────────────────────────────────────
+function XPFloatAnimation({ xpAmount, hasVelocityBonus, isPowerHour, onAnimationDone, theme }) {
   const goldMode = theme === 'god';
   return (
     <motion.div
@@ -393,6 +971,11 @@ function XPFloatAnimation({ xpAmount, hasVelocityBonus, onAnimationDone, theme }
           ⚡ VELOCITY BONUS!
         </div>
       )}
+      {isPowerHour && (
+        <div style={{ fontFamily: 'monospace', color: '#ffd700', textShadow: '0 0 15px #ffd700', fontSize: 14, fontWeight: 700 }}>
+          ⚡ POWER HOUR 2×!
+        </div>
+      )}
       {goldMode && (
         <div style={{ fontFamily: 'monospace', color: '#ffd700', textShadow: '0 0 15px #ffd700', fontSize: 14, fontWeight: 700 }}>
           ✦ GOD MODE BONUS ✦
@@ -402,6 +985,7 @@ function XPFloatAnimation({ xpAmount, hasVelocityBonus, onAnimationDone, theme }
   );
 }
 
+// ── RevisionCard ────────────────────────────────────────────────────────────
 function RevisionCard({ revisionEntry }) {
   const daysLeft   = Math.ceil((revisionEntry.dueDate - Date.now()) / 86400000);
   const isOverdue  = daysLeft < 0;
@@ -433,63 +1017,7 @@ function RevisionCard({ revisionEntry }) {
   );
 }
 
-function ChapterItem({ chapter, isCompleted, animDelay }) {
-  const diffConfig = DIFF_CONFIG[chapter.diff];
-  return (
-    <motion.div
-      layout
-      initial={{ opacity: 0 }}
-      animate={{ opacity: isCompleted ? 0.35 : 1 }}
-      transition={{ duration: 0.4, delay: animDelay }}
-      className="flex items-center gap-2 py-1.5 px-2 rounded"
-      style={{ background: isCompleted ? 'rgba(0,0,0,0.2)' : 'transparent' }}
-    >
-      {isCompleted ? (
-        <CheckCircle size={12} style={{ color: '#00ff41', flexShrink: 0 }} />
-      ) : (
-        <div style={{ width: 12, height: 12, flexShrink: 0, border: `1px solid ${diffConfig.color}`, borderRadius: '50%' }} />
-      )}
-      <span className="text-sm flex-1" style={{
-        color: isCompleted ? '#4a6080' : '#c0d8f0',
-        textDecoration: isCompleted ? 'line-through' : 'none',
-        textDecorationColor: '#ff00ff',
-      }}>{chapter.name}</span>
-      <span className="font-mono px-1.5 py-0.5" style={{
-        color: diffConfig.color, border: `1px solid ${diffConfig.color}60`,
-        background: diffConfig.bg, fontSize: 8,
-      }}>{chapter.diff}</span>
-    </motion.div>
-  );
-}
-
-function IgnitionSwitch({ onIgnite }) {
-  const [isArmed, setIsArmed] = useState(false);
-  return (
-    <motion.div className="relative" animate={isArmed ? { x: [-2, 2, -2, 2, 0] } : {}} transition={{ duration: 0.3 }}>
-      {!isArmed ? (
-        <motion.button
-          whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-          onClick={() => setIsArmed(true)}
-          className="w-full flex items-center justify-center gap-3 py-3 px-6 font-mono text-sm font-black tracking-widest"
-          style={{ background: 'linear-gradient(135deg, rgba(255,0,0,0.15), rgba(139,0,0,0.2))', border: '1px solid #ff0000', color: '#ff4444', boxShadow: '0 0 20px rgba(255,0,0,0.3), 0 0 40px rgba(255,0,0,0.1)' }}
-        >
-          <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1.2 }}><AlertTriangle size={18} /></motion.div>
-          ⚠️ OVERRIDE: DISTRACTED — INITIATE MICRO-MISSION
-          <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1.2, delay: 0.6 }}><AlertTriangle size={18} /></motion.div>
-        </motion.button>
-      ) : (
-        <div className="flex items-center gap-3 py-3 px-5" style={{ background: 'rgba(139,0,0,0.3)', border: '2px solid #ff0000', boxShadow: '0 0 30px rgba(255,0,0,0.5)' }}>
-          <Skull size={16} color="#ff4444" />
-          <span className="font-mono text-xs text-red-400 flex-1">CONFIRM OVERRIDE?</span>
-          <button onClick={() => { onIgnite(); setIsArmed(false); }} className="px-4 py-1.5 font-mono text-xs font-black text-white" style={{ background: '#ff0000', boxShadow: '0 0 12px #ff000080' }}>INITIATE</button>
-          <button onClick={() => setIsArmed(false)} className="px-3 py-1.5 font-mono text-xs text-gray-400 border border-gray-700">ABORT</button>
-        </div>
-      )}
-    </motion.div>
-  );
-}
-
-// ── SystemIntegrityBar: Loss Aversion visual ─────────────────────────────────
+// ── SystemIntegrityBar ──────────────────────────────────────────────────────
 function SystemIntegrityBar({ integrity }) {
   const color =
     integrity >= 75 ? '#00ff41' :
@@ -511,8 +1039,7 @@ function SystemIntegrityBar({ integrity }) {
         <span className="font-mono tracking-widest" style={{ color, fontSize: 9 }}>SYS INTEGRITY</span>
       </div>
       <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
-        <motion.div
-          className="h-full rounded-full"
+        <motion.div className="h-full rounded-full"
           style={{ background: color, boxShadow: `0 0 6px ${color}` }}
           animate={{ width: `${integrity}%` }}
           transition={{ duration: 0.8 }}
@@ -527,32 +1054,28 @@ function SystemIntegrityBar({ integrity }) {
 // SECTION 5 — COMPLEX COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-// ── AvatarStatsCard (RPG Stats) ──────────────────────────────────────────────
+// ── AvatarStatsCard ─────────────────────────────────────────────────────────
 function AvatarStatsCard({ stats, totalXP, theme }) {
-  const level     = getUserLevel(totalXP);
-  const lvlProg   = getLevelProgress(totalXP);
-  const rank      = getRank(totalXP);
+  const level   = getUserLevel(totalXP);
+  const lvlProg = getLevelProgress(totalXP);
+  const rank    = getRank(totalXP);
 
   const themeStyles = {
     dim: {
       border: '1px solid rgba(100,100,120,0.4)',
       background: 'linear-gradient(135deg, #0a0a12, #050508)',
-      titleColor: '#8888aa',
-      accentColor: '#8888aa',
-      glow: 'none',
+      titleColor: '#8888aa', accentColor: '#8888aa', glow: 'none',
     },
     neon: {
       border: '1px solid rgba(0,245,255,0.4)',
       background: 'linear-gradient(135deg, #0a1628, #060d1a)',
-      titleColor: '#00f5ff',
-      accentColor: '#ff00ff',
+      titleColor: '#00f5ff', accentColor: '#ff00ff',
       glow: '0 0 20px rgba(0,245,255,0.2)',
     },
     god: {
       border: '2px solid rgba(255,215,0,0.8)',
       background: 'linear-gradient(135deg, #1a1200, #0d0900)',
-      titleColor: '#ffd700',
-      accentColor: '#ffa500',
+      titleColor: '#ffd700', accentColor: '#ffa500',
       glow: '0 0 30px rgba(255,215,0,0.4), 0 0 60px rgba(255,165,0,0.2)',
     },
   };
@@ -560,40 +1083,30 @@ function AvatarStatsCard({ stats, totalXP, theme }) {
   const ts = themeStyles[theme] || themeStyles.neon;
 
   const statDefs = [
-    { key: 'strength',     label: 'STR',  fullLabel: 'STRENGTH',     desc: 'Physics XP',     color: '#00f5ff', icon: Atom        },
-    { key: 'dexterity',    label: 'DEX',  fullLabel: 'DEXTERITY',    desc: 'Chemistry XP',   color: '#ff00ff', icon: FlaskConical },
-    { key: 'intelligence', label: 'INT',  fullLabel: 'INTELLIGENCE', desc: 'Math XP',         color: '#00ff41', icon: Calculator  },
+    { key: 'strength',     label: 'STR', fullLabel: 'STRENGTH',     desc: 'Physics XP',   color: '#00f5ff', icon: Atom         },
+    { key: 'dexterity',    label: 'DEX', fullLabel: 'DEXTERITY',    desc: 'Chemistry XP', color: '#ff00ff', icon: FlaskConical },
+    { key: 'intelligence', label: 'INT', fullLabel: 'INTELLIGENCE', desc: 'Math XP',       color: '#00ff41', icon: Calculator  },
   ];
 
-  // Find max stat for bar scaling
   const maxStat = Math.max(...statDefs.map(s => stats[s.key] || 0), 1);
 
   return (
-    <motion.div
-      layout
-      style={{ ...ts, boxShadow: ts.glow }}
-      className="p-5 relative overflow-hidden"
-    >
-      {/* God Mode particle shimmer */}
+    <motion.div layout style={{ ...ts, boxShadow: ts.glow }} className="p-5 relative overflow-hidden">
       {theme === 'god' && (
-        <motion.div
-          className="absolute inset-0 pointer-events-none"
+        <motion.div className="absolute inset-0 pointer-events-none"
           animate={{ opacity: [0.04, 0.12, 0.04] }}
           transition={{ repeat: Infinity, duration: 2.5 }}
           style={{ background: 'radial-gradient(ellipse at 50% 50%, rgba(255,215,0,0.3), transparent 70%)' }}
         />
       )}
-
       <div className="relative z-10">
-        {/* Header row */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 flex items-center justify-center relative"
               style={{ background: ts.background, border: `2px solid ${ts.titleColor}`, boxShadow: `0 0 12px ${ts.titleColor}60` }}>
               <Cpu size={18} style={{ color: ts.titleColor }} />
               {theme === 'god' && (
-                <motion.div
-                  className="absolute -inset-0.5 rounded-none pointer-events-none"
+                <motion.div className="absolute -inset-0.5 rounded-none pointer-events-none"
                   animate={{ opacity: [0.4, 1, 0.4] }}
                   transition={{ repeat: Infinity, duration: 1.2 }}
                   style={{ border: `1px solid ${ts.titleColor}`, boxShadow: `0 0 8px ${ts.titleColor}` }}
@@ -615,7 +1128,6 @@ function AvatarStatsCard({ stats, totalXP, theme }) {
           </div>
         </div>
 
-        {/* Level progress bar */}
         <div className="mb-4">
           <div className="flex justify-between items-center mb-1">
             <span className="font-mono" style={{ color: ts.accentColor, fontSize: 9 }}>LEVEL PROGRESS</span>
@@ -629,11 +1141,10 @@ function AvatarStatsCard({ stats, totalXP, theme }) {
           </div>
         </div>
 
-        {/* Stat bars */}
         <div className="space-y-2.5">
           {statDefs.map(({ key, label, fullLabel, desc, color, icon: Icon }) => {
-            const val   = stats[key] || 0;
-            const pct   = (val / Math.max(maxStat, 1)) * 100;
+            const val = stats[key] || 0;
+            const pct = (val / Math.max(maxStat, 1)) * 100;
             return (
               <div key={key} className="flex items-center gap-3">
                 <Icon size={12} style={{ color, flexShrink: 0 }} />
@@ -655,7 +1166,6 @@ function AvatarStatsCard({ stats, totalXP, theme }) {
           })}
         </div>
 
-        {/* Theme tier badge */}
         <div className="mt-4 flex items-center gap-2">
           <div className="flex items-center gap-1.5 px-2 py-1" style={{
             background: theme === 'god' ? 'rgba(255,215,0,0.1)' : theme === 'neon' ? 'rgba(0,245,255,0.08)' : 'rgba(80,80,100,0.08)',
@@ -677,7 +1187,7 @@ function AvatarStatsCard({ stats, totalXP, theme }) {
   );
 }
 
-// ── Episode Roadmap Card ─────────────────────────────────────────────────────
+// ── EpisodeCard ─────────────────────────────────────────────────────────────
 function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, deployedNames }) {
   const episodeChapterKeys = episode.chapters.map(c => `${c.subject}::${c.name}`);
   const completedInEpisode = episodeChapterKeys.filter(k => completedChapters.includes(k)).length;
@@ -694,17 +1204,12 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
       style={{
         background: isLocked
           ? 'linear-gradient(135deg, rgba(10,10,16,0.95), rgba(5,5,10,0.95))'
-          : `linear-gradient(135deg, rgba(10,18,30,0.95), rgba(6,10,18,0.95))`,
-        border: isLocked
-          ? '1px solid rgba(50,50,70,0.4)'
-          : `1px solid ${episode.color}40`,
-        boxShadow: isComplete
-          ? `0 0 20px ${episode.color}30`
-          : 'none',
+          : 'linear-gradient(135deg, rgba(10,18,30,0.95), rgba(6,10,18,0.95))',
+        border: isLocked ? '1px solid rgba(50,50,70,0.4)' : `1px solid ${episode.color}40`,
+        boxShadow: isComplete ? `0 0 20px ${episode.color}30` : 'none',
         filter: isLocked ? 'blur(1px)' : 'none',
       }}
     >
-      {/* Lock overlay */}
       {isLocked && (
         <div className="absolute inset-0 z-10 flex flex-col items-center justify-center"
           style={{ background: 'rgba(5,5,12,0.7)', backdropFilter: 'blur(3px)' }}>
@@ -714,7 +1219,6 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
         </div>
       )}
 
-      {/* Episode header */}
       <div className="px-4 pt-4 pb-3" style={{ borderBottom: `1px solid ${episode.color}20` }}>
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
@@ -732,7 +1236,6 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
           textShadow: isLocked ? 'none' : `0 0 10px ${episode.color}60`,
         }}>{episode.title}</div>
 
-        {/* Progress bar */}
         <div className="mt-2 flex items-center gap-2">
           <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: '#0a1020' }}>
             <motion.div className="h-full rounded-full"
@@ -744,10 +1247,9 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
         </div>
       </div>
 
-      {/* Chapter list */}
       <div className="px-3 py-2 space-y-1">
         {episode.chapters.map((ch, idx) => {
-          const key         = `${ch.subject}::${ch.name}`;
+          const key        = `${ch.subject}::${ch.name}`;
           const isCompleted = completedChapters.includes(key);
           const isDeployed  = deployedNames.some(d => d.subject === ch.subject && d.name === ch.name);
           const sc          = SUBJECT_CONFIG[ch.subject];
@@ -769,11 +1271,9 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
                 textDecoration: isCompleted ? 'line-through' : 'none',
                 textDecorationColor: '#ff00ff',
               }}>{ch.name}</span>
-              <span className="font-mono" style={{ color: sc?.color, fontSize: 8 }}>{ch.subject.slice(0,3).toUpperCase()}</span>
+              <span className="font-mono" style={{ color: sc?.color, fontSize: 8 }}>{ch.subject.slice(0, 3).toUpperCase()}</span>
               {!isCompleted && !isDeployed && !isLocked && (
-                <motion.button
-                  whileTap={{ scale: 0.88 }}
-                  onClick={() => onDeployChapter(ch)}
+                <motion.button whileTap={{ scale: 0.88 }} onClick={() => onDeployChapter(ch)}
                   className="px-1.5 py-0.5 font-mono font-black"
                   style={{ background: `${episode.color}18`, border: `1px solid ${episode.color}60`, color: episode.color, fontSize: 8 }}
                 >+ADD</motion.button>
@@ -813,21 +1313,17 @@ function VigilanceOverlay({ countdown, onResync }) {
         <div className="font-mono text-sm text-red-300 mb-2">NEURAL LINK DEGRADATION DETECTED</div>
         <div className="font-mono text-xs text-gray-500 mb-6">No activity detected — focus protocol compromised</div>
         <div className="font-mono text-6xl font-black mb-6" style={{ color: isUrgent ? '#ff0000' : '#ff6b00', textShadow: `0 0 30px ${isUrgent ? '#ff0000' : '#ff6b00'}` }}>{countdown}s</div>
-        <motion.button
-          whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-          onClick={onResync}
+        <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onResync}
           className="px-8 py-4 font-mono text-sm font-black tracking-widest"
           style={{ background: 'rgba(0,245,255,0.15)', border: '2px solid #00f5ff', color: '#00f5ff', boxShadow: '0 0 30px rgba(0,245,255,0.4)' }}
-        >
-          <Radio size={16} className="inline mr-2" />RE-SYNC NEURAL LINK
-        </motion.button>
+        ><Radio size={16} className="inline mr-2" />RE-SYNC NEURAL LINK</motion.button>
         <div className="mt-4 font-mono text-red-900" style={{ fontSize: 10 }}>FAILURE TO COMPLY → MISSION ABORTED</div>
       </motion.div>
     </motion.div>
   );
 }
 
-// ── LiveTimeDisplay ───────────────────────────────────────────────────────────
+// ── LiveTimeDisplay ──────────────────────────────────────────────────────────
 function LiveTimeDisplay({ taskId, isRunning, sessionStartRef }) {
   const [displaySeconds, setDisplaySeconds] = useState(0);
   useEffect(() => {
@@ -850,7 +1346,7 @@ function LiveTimeDisplay({ taskId, isRunning, sessionStartRef }) {
   );
 }
 
-// ── TimerModal ────────────────────────────────────────────────────────────────
+// ── TimerModal ───────────────────────────────────────────────────────────────
 function TimerModal({
   task, onClose,
   timerSecondsLeft, timerTotalSeconds, timerIsRunning, timerIsBreak, timerCompletedSessions,
@@ -1049,8 +1545,8 @@ function TimerModal({
   );
 }
 
-// ── MissionCard ───────────────────────────────────────────────────────────────
-function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer, timerIsRunning }) {
+// ── MissionCard ──────────────────────────────────────────────────────────────
+function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer, timerIsRunning, onActivateOverride }) {
   const diffConfig    = DIFF_CONFIG[task.diff];
   const subjectConfig = SUBJECT_CONFIG[task.subject] || {};
   const SubjectIcon   = subjectConfig.icon || BookOpen;
@@ -1178,12 +1674,31 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
             <Trash2 size={12} />
           </button>
         </div>
+
+        {/* Friction Reducer button */}
+        {!task.isMicro && (
+          <motion.button
+            whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
+            onClick={() => onActivateOverride(task)}
+            className="w-full mt-2 flex items-center justify-center gap-2 py-1.5 px-3 font-mono tracking-widest"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255,0,0,0.07), rgba(100,0,0,0.1))',
+              border: '1px solid rgba(255,60,0,0.3)',
+              color: 'rgba(255,100,60,0.7)',
+              fontSize: 9,
+            }}
+          >
+            <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1.5 }}>⚠</motion.span>
+            SYSTEM STALLING: ACTIVATE OVERRIDE
+            <motion.span animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1.5, delay: 0.5 }}>⚠</motion.span>
+          </motion.button>
+        )}
       </div>
     </motion.div>
   );
 }
 
-// ── WarArchiveModal ───────────────────────────────────────────────────────────
+// ── WarArchiveModal ──────────────────────────────────────────────────────────
 function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }) {
   const totalPyqsSolved = archives.reduce((s, e) => s + (e.finalPyqCount    || 0), 0);
   const totalMinutes    = archives.reduce((s, e) => s + (e.timeSpentMinutes || 0), 0);
@@ -1265,6 +1780,7 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
                     <td className="py-2 px-2">
                       <div className="text-white font-semibold" style={{ fontSize: 13 }}>{entry.chapterName}</div>
                       {entry.hadVelocityBonus && <div className="font-mono text-yellow-500" style={{ fontSize: 8 }}>⚡ VELOCITY BONUS</div>}
+                      {entry.hadPowerHour && <div className="font-mono text-orange-400" style={{ fontSize: 8 }}>⚡ POWER HOUR 2×</div>}
                     </td>
                     <td className="py-2 px-2 font-mono" style={{ color: SUBJECT_PRINT_COLORS[entry.subject] || '#aaa', fontSize: 10 }}>{entry.subject}</td>
                     <td className="py-2 px-2">
@@ -1296,40 +1812,83 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
 
 export default function App() {
 
-  // ── RPG STATS STATE ───────────────────────────────────────────────────────────
-  const [totalXP,        setTotalXP]        = useState(() => LS.get('total_xp', 0));
-  const [rpgStats,       setRpgStats]       = useState(() => LS.get('rpg_stats', { strength: 0, dexterity: 0, intelligence: 0 }));
+  // ── BOOT SEQUENCE STATE ───────────────────────────────────────────────────────
+  const [showBoot,    setShowBoot]    = useState(false);
+  const [appReady,    setAppReady]    = useState(false);
+  const [bootChecked, setBootChecked] = useState(false);
 
-  // Derived RPG values (pure, no state)
-  const userLevel  = getUserLevel(totalXP);
+  // On mount: check if boot sequence should show
+  useEffect(() => {
+    const lastLogin = LS.get('last_login_epoch', null);
+    const needsBoot = isNewGameDay(lastLogin);
+
+    if (needsBoot) {
+      setShowBoot(true);
+    } else {
+      setAppReady(true);
+    }
+    setBootChecked(true);
+
+    // Always record this visit so we don't boot again until next game day
+    LS.set('last_login_epoch', Date.now());
+  }, []);
+
+  // ── RPG STATS STATE ───────────────────────────────────────────────────────────
+  const [totalXP,   setTotalXP]   = useState(() => LS.get('total_xp', 0));
+  const [rpgStats,  setRpgStats]  = useState(() => LS.get('rpg_stats', { strength: 0, dexterity: 0, intelligence: 0 }));
+
+  const userLevel   = getUserLevel(totalXP);
   const systemTheme = getSystemTheme(userLevel);
 
+  // ── POWER HOUR STATE ──────────────────────────────────────────────────────────
+  // powerHourEnd is an epoch ms timestamp; null if not active
+  const [powerHourEnd, setPowerHourEnd] = useState(() => {
+    const saved = LS.get('power_hour_end', null);
+    // Validate it's still in the future and on this game day
+    if (saved && isPowerHourActive(saved)) return saved;
+    return null;
+  });
+
+  const isInPowerHour = isPowerHourActive(powerHourEnd);
+
+  // ── ENTERTAINMENT / DAILY PYQs ─────────────────────────────────────────────
+  // dailyPyqsSolved resets on a new game day
+  const [dailyPyqsSolved, setDailyPyqsSolved] = useState(() => {
+    const savedDay  = LS.get('daily_pyq_day',    null);
+    const savedPyqs = LS.get('daily_pyqs_solved', 0);
+    if (savedDay === getGameDay()) return savedPyqs;
+    return 0;
+  });
+
   // ── LOSS AVERSION — SYSTEM INTEGRITY ─────────────────────────────────────────
-  // Starts at 100%. Decays if no pomodoro started in >1hr. Restores on mission start.
-  const [systemIntegrity,  setSystemIntegrity]  = useState(() => LS.get('system_integrity', 100));
-  const lastPomoStartRef   = useRef(LS.get('last_pomo_start_epoch', 0));
-  const integrityTimerRef  = useRef(null);
+  const [systemIntegrity, setSystemIntegrity] = useState(() => LS.get('system_integrity', 100));
+  const lastPomoStartRef  = useRef(LS.get('last_pomo_start_epoch', 0));
+  const integrityTimerRef = useRef(null);
 
   // ── CORE APP STATE ────────────────────────────────────────────────────────────
   const [completedChapters, setCompletedChapters] = useState(() => LS.get('completed_chapters', []));
-  const [missions,           setMissions]          = useState(() => LS.get('missions', []));
-  const [revisions,          setRevisions]         = useState(() => LS.get('revisions', []));
-  const [warArchives,        setWarArchives]       = useState(() => LS.get('WAR_ARCHIVES', []));
-  const [vigilanceMode,      setVigilanceMode]     = useState(() => LS.get('vigilance_mode', false));
+  const [missions,          setMissions]          = useState(() => LS.get('missions', []));
+  const [revisions,         setRevisions]         = useState(() => LS.get('revisions', []));
+  const [warArchives,       setWarArchives]        = useState(() => LS.get('WAR_ARCHIVES', []));
+  const [vigilanceMode,     setVigilanceMode]      = useState(() => LS.get('vigilance_mode', false));
+
+  // ── MICRO-MISSION STATE ───────────────────────────────────────────────────────
+  const [showMicroMission,     setShowMicroMission]     = useState(false);
+  const [microMissionParentId, setMicroMissionParentId] = useState(null);
 
   // ── TIMER STATE (top-level, persists across modal open/close) ─────────────────
-  const [timerTaskId,             setTimerTaskId]             = useState(() => LS.get('ptimer_taskId', null));
-  const [timerSecondsLeft,        setTimerSecondsLeft]        = useState(() => LS.get('ptimer_secondsLeft', POMODORO_WORK));
-  const [timerTotalSeconds,       setTimerTotalSeconds]       = useState(() => LS.get('ptimer_totalSeconds', POMODORO_WORK));
-  const [timerIsRunning,          setTimerIsRunning]          = useState(false);
-  const [timerIsBreak,            setTimerIsBreak]            = useState(() => LS.get('ptimer_isBreak', false));
-  const [timerCompletedSessions,  setTimerCompletedSessions]  = useState(() => LS.get('ptimer_sessions', 0));
+  const [timerTaskId,            setTimerTaskId]            = useState(() => LS.get('ptimer_taskId', null));
+  const [timerSecondsLeft,       setTimerSecondsLeft]       = useState(() => LS.get('ptimer_secondsLeft', POMODORO_WORK));
+  const [timerTotalSeconds,      setTimerTotalSeconds]      = useState(() => LS.get('ptimer_totalSeconds', POMODORO_WORK));
+  const [timerIsRunning,         setTimerIsRunning]         = useState(false);
+  const [timerIsBreak,           setTimerIsBreak]           = useState(() => LS.get('ptimer_isBreak', false));
+  const [timerCompletedSessions, setTimerCompletedSessions] = useState(() => LS.get('ptimer_sessions', 0));
   const sessionStartEpochRef = useRef(null);
 
   // ── UI STATE ──────────────────────────────────────────────────────────────────
   const [modalOpen,        setModalOpen]        = useState(false);
   const [xpFloatData,      setXpFloatData]      = useState(null);
-  const [showArchiveModal, setShowArchiveModal] = useState(false);
+  const [showArchiveModal, setShowArchiveModal]  = useState(false);
 
   // ── MISSION BUILDER FORM ──────────────────────────────────────────────────────
   const [formSubject,  setFormSubject]  = useState('Physics');
@@ -1357,9 +1916,36 @@ export default function App() {
   useEffect(() => { LS.set('ptimer_isBreak',      timerIsBreak);      }, [timerIsBreak]);
   useEffect(() => { LS.set('ptimer_sessions',     timerCompletedSessions); }, [timerCompletedSessions]);
   useEffect(() => { LS.set('ptimer_taskId',       timerTaskId);       }, [timerTaskId]);
+  useEffect(() => {
+    LS.set('power_hour_end',    powerHourEnd);
+  }, [powerHourEnd]);
+  useEffect(() => {
+    LS.set('daily_pyqs_solved', dailyPyqsSolved);
+    LS.set('daily_pyq_day',     getGameDay());
+  }, [dailyPyqsSolved]);
 
-  // ── LOSS AVERSION: INTEGRITY DECAY ENGINE ────────────────────────────────────
-  // Every 30 minutes, check if last pomo start was > 1hr ago → decay 15%
+  // ── 6 AM DAILY RESET ──────────────────────────────────────────────────────────
+  // Check every minute if we've crossed 6 AM into a new game day while the app is open
+  useEffect(() => {
+    let lastKnownDay = getGameDay();
+    const id = setInterval(() => {
+      const currentDay = getGameDay();
+      if (currentDay !== lastKnownDay) {
+        // New game day has begun — reset daily counters
+        lastKnownDay = currentDay;
+        setDailyPyqsSolved(0);
+        LS.set('daily_leisure_redeemed', 0);
+        // Expire power hour if it rolled over (shouldn't, but guard)
+        setPowerHourEnd((prev) => {
+          if (prev && !isPowerHourActive(prev)) return null;
+          return prev;
+        });
+      }
+    }, 60 * 1000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ── LOSS AVERSION: INTEGRITY DECAY ENGINE ─────────────────────────────────────
   useEffect(() => {
     integrityTimerRef.current = setInterval(() => {
       const idleMs = Date.now() - lastPomoStartRef.current;
@@ -1417,7 +2003,6 @@ export default function App() {
         sessionStartEpochRef.current  = Date.now();
         lastPomoStartRef.current      = Date.now();
         LS.set('last_pomo_start_epoch', Date.now());
-        // Restore integrity on mission start
         setSystemIntegrity((si) => Math.min(100, si + INTEGRITY_RESTORE_AMOUNT));
       } else {
         if (sessionStartEpochRef.current !== null && timerTaskId) {
@@ -1474,9 +2059,21 @@ export default function App() {
 
   const activeTimerTask = missions.find((m) => m.id === timerTaskId) || null;
 
-  // ── DERIVED EPISODE/SYLLABUS HELPERS ─────────────────────────────────────────
+  // ── BOOT INITIALIZE HANDLER ───────────────────────────────────────────────────
+  const handleInitialize = useCallback(() => {
+    setShowBoot(false);
+    setAppReady(true);
 
-  // Determine which episodes are unlocked
+    // Start Power Hour
+    const end = Date.now() + POWER_HOUR_DURATION_MS;
+    setPowerHourEnd(end);
+    LS.set('power_hour_end', end);
+
+    firePowerHourConfetti();
+    playNeuralSync();
+  }, []);
+
+  // ── EPISODE UNLOCK HELPER ─────────────────────────────────────────────────────
   const getEpisodeUnlocked = useCallback((episodeId) => {
     if (episodeId === 1) return true;
     const prevEpisode = EPISODES.find(e => e.id === episodeId - 1);
@@ -1504,7 +2101,6 @@ export default function App() {
     .filter((m) => m.subject === formSubject && !m.isMicro)
     .map((m) => m.name);
 
-  // Deployed missions as {subject, name} for episode card buttons
   const deployedMissionRefs = missions.map(m => ({ subject: m.subject, name: m.name }));
 
   // Print values
@@ -1533,7 +2129,10 @@ export default function App() {
   const handleAddMission = () => {
     if (!formChapter) return;
     if (missions.some((m) => m.subject === formSubject && m.name === formChapter)) return;
-    const newMission = { id: Date.now().toString(), name: formChapter, subject: formSubject, diff: formDiff, pyqs: Number(formPyqCount) || 0, createdAt: Date.now() };
+    const newMission = {
+      id: Date.now().toString(), name: formChapter, subject: formSubject,
+      diff: formDiff, pyqs: Number(formPyqCount) || 0, createdAt: Date.now(),
+    };
     setMissions((prev) => [newMission, ...prev]);
     const next = SYLLABUS[formSubject].find((ch) => !completedChapters.includes(`${formSubject}::${ch.name}`) && ch.name !== formChapter);
     setFormChapter(next?.name || '');
@@ -1541,32 +2140,35 @@ export default function App() {
     setFormPyqCount(0);
   };
 
-  // Deploy a chapter directly from the episode roadmap
   const handleDeployFromEpisode = (ch) => {
     const alreadyQueued = missions.some(m => m.subject === ch.subject && m.name === ch.name);
     if (alreadyQueued) return;
     const syllabusEntry = SYLLABUS[ch.subject]?.find(s => s.name === ch.name);
     if (!syllabusEntry) return;
     const newMission = {
-      id: Date.now().toString(),
-      name: ch.name, subject: ch.subject,
-      diff: syllabusEntry.diff, pyqs: 0,
-      createdAt: Date.now(),
+      id: Date.now().toString(), name: ch.name, subject: ch.subject,
+      diff: syllabusEntry.diff, pyqs: 0, createdAt: Date.now(),
     };
     setMissions((prev) => [newMission, ...prev]);
   };
 
-  const handleIgnite = () => {
-    const subjectKeys = Object.keys(SYLLABUS);
-    const subj        = subjectKeys[Math.floor(Math.random() * subjectKeys.length)];
-    const micro       = { id: `micro_${Date.now()}`, name: '⚡ MICRO-MISSION: 1 PYQ NOW', subject: subj, diff: 'E', pyqs: 1, isMicro: true, createdAt: Date.now() };
-    setMissions((prev) => [micro, ...prev]);
-    handleAbortTimer();
-    setTimerTaskId(micro.id);
-    setModalOpen(true);
-    // Restore some integrity for taking action
-    setSystemIntegrity((si) => Math.min(100, si + INTEGRITY_RESTORE_AMOUNT));
-  };
+  // Friction Reducer: activate micro-mission for a specific task
+  const handleActivateOverride = useCallback((task) => {
+    setMicroMissionParentId(task.id);
+    setShowMicroMission(true);
+  }, []);
+
+  const handleMicroMissionComplete = useCallback(() => {
+    setShowMicroMission(false);
+    setMicroMissionParentId(null);
+    // Credit 2 PYQs to daily count (the ones they just solved)
+    setDailyPyqsSolved((prev) => prev + MICRO_MISSION_TARGET_PYQS);
+  }, []);
+
+  const handleMicroMissionAbort = useCallback(() => {
+    setShowMicroMission(false);
+    setMicroMissionParentId(null);
+  }, []);
 
   // ── RPG: ANNIHILATE MISSION ───────────────────────────────────────────────────
   const handleAnnihilate = (task, comboLevel, velocityMultiplier) => {
@@ -1579,28 +2181,32 @@ export default function App() {
 
     const baseXP      = XP_MAP[task.diff] || 150;
     const hadVelocity = comboLevel > 0;
-    // God mode bonus: +25% to XP if theme === god
+    const powerBonus  = isInPowerHour ? POWER_HOUR_MULTIPLIER : 1;
     const godBonus    = systemTheme === 'god' ? 1.25 : 1;
-    const xpEarned    = Math.round((hadVelocity ? baseXP * velocityMultiplier : baseXP) * godBonus);
+    const xpEarned    = Math.round((hadVelocity ? baseXP * velocityMultiplier : baseXP) * powerBonus * godBonus);
 
     setTotalXP((prev) => prev + xpEarned);
-    setXpFloatData({ xpAmount: xpEarned, hasVelocityBonus: hadVelocity, id: Date.now() });
+    setXpFloatData({ xpAmount: xpEarned, hasVelocityBonus: hadVelocity, isPowerHour: isInPowerHour, id: Date.now() });
 
-    // ── RPG STAT INCREASE ────────────────────────────────────────────────────────
     if (!task.isMicro) {
       const statKey = SUBJECT_CONFIG[task.subject]?.stat;
       if (statKey) {
         setRpgStats((prev) => ({ ...prev, [statKey]: (prev[statKey] || 0) + xpEarned }));
       }
 
+      // Count PYQs solved for today's entertainment bar
+      const pyqsSolved = LS.get(`solved_${task.id}`, 0);
+      if (pyqsSolved > 0) {
+        setDailyPyqsSolved((prev) => prev + pyqsSolved);
+      }
+
       // Archive entry
       const timeSpentSeconds = LS.get(`time_spent_${task.id}`, 0);
-      const pyqsSolved       = LS.get(`solved_${task.id}`, 0);
       const archiveEntry = {
         id: task.id, chapterName: task.name, subject: task.subject,
         difficulty: task.diff, finalPyqCount: pyqsSolved,
         timeSpentMinutes: Math.round(timeSpentSeconds / 60),
-        xpEarned, hadVelocityBonus: hadVelocity,
+        xpEarned, hadVelocityBonus: hadVelocity, hadPowerHour: isInPowerHour,
         completedAt: Date.now(),
         completedDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
         completedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -1629,9 +2235,10 @@ export default function App() {
     LS.remove(`solved_${task.id}`);
     LS.remove(`time_spent_${task.id}`);
 
-    // Fire appropriate confetti for theme
     if (systemTheme === 'god') {
       fireGodModeConfetti();
+    } else if (isInPowerHour) {
+      firePowerHourConfetti();
     } else {
       fireConfetti(task.diff);
     }
@@ -1649,10 +2256,9 @@ export default function App() {
     LS.remove(`time_spent_${taskId}`);
   };
 
-  // ── DYNAMIC GLITCH STYLES based on integrity ──────────────────────────────────
+  // ── DYNAMIC STYLES ────────────────────────────────────────────────────────────
   const glitchCSS = getGlitchStyles(systemIntegrity);
 
-  // ── THEME-DEPENDENT HEADER STYLES ────────────────────────────────────────────
   const headerStyle = systemTheme === 'god'
     ? { background: 'rgba(20,12,0,0.97)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,215,0,0.4)' }
     : systemTheme === 'neon'
@@ -1665,507 +2271,566 @@ export default function App() {
     ? 'linear-gradient(180deg, #020508 0%, #030810 50%, #020508 100%)'
     : 'linear-gradient(180deg, #050508 0%, #080810 50%, #050508 100%)';
 
+  // Don't render app content until boot check is done
+  if (!bootChecked) return null;
+
   // ── JSX ────────────────────────────────────────────────────────────────────────
-
   return (
-    <div
-      className={`min-h-screen pb-20 ${systemIntegrity < 50 ? 'glitch-scanlines glitch-body glitch-color-shift' : ''}`}
-      style={{ background: bgStyle, color: '#e0f0ff' }}
-    >
-      {/* Glitch + print styles injected dynamically */}
-      <style>{`
-        ${glitchCSS}
-
-        /* God Mode ambient particle shimmer on body */
-        ${systemTheme === 'god' ? `
-          body::before {
-            content: '';
-            position: fixed;
-            inset: 0;
-            pointer-events: none;
-            z-index: 0;
-            background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.04), transparent 60%);
-            animation: god-pulse 4s ease-in-out infinite;
-          }
-          @keyframes god-pulse {
-            0%, 100% { opacity: 0.4; }
-            50% { opacity: 1; }
-          }
-        ` : ''}
-
-        @media print {
-          body * { visibility: hidden !important; background: none !important; }
-          #archive-report, #archive-report * { visibility: visible !important; color: black !important; }
-          #archive-report {
-            position: absolute !important; top: 0 !important; left: 0 !important;
-            width: 100% !important; display: block !important;
-          }
-          .no-print { display: none !important; }
-          #archive-report { font-family: 'Courier New', Courier, monospace; padding: 32px; box-sizing: border-box; }
-          .print-header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #222; padding-bottom: 16px; }
-          .print-title  { font-size: 22px; font-weight: 900; letter-spacing: 4px; }
-          .print-sub    { font-size: 11px; color: #555; margin-top: 4px; letter-spacing: 2px; }
-          .print-stats  { display: flex; justify-content: space-around; margin-bottom: 20px; padding: 12px; border: 1px solid #ccc; }
-          .print-stat     { text-align: center; }
-          .print-stat-val { font-size: 22px; font-weight: 900; }
-          .print-stat-lbl { font-size: 9px; letter-spacing: 2px; color: #555; }
-          .print-table    { width: 100%; border-collapse: collapse; font-size: 11px; }
-          .print-table th { border-bottom: 2px solid #222; padding: 6px 8px; text-align: left; font-size: 9px; letter-spacing: 1px; background: #f5f5f5; }
-          .print-table td { border-bottom: 1px solid #ddd; padding: 6px 8px; }
-          .print-table tr:nth-child(even) td { background: #fafafa; }
-          .print-footer { margin-top: 20px; font-size: 9px; color: #888; text-align: center; letter-spacing: 1px; }
-          @page { margin: 1.5cm; }
-        }
-      `}</style>
-
-      {/* ── Hidden print zone ── */}
-      <div id="archive-report" style={{ display: 'none' }}>
-        <div className="print-header">
-          <div className="print-title">MHT-CET NEXUS — INTEL REPORT</div>
-          <div className="print-sub">CLASSIFIED WAR ARCHIVES • GENERATED {printGeneratedDate}</div>
-          <div className="print-sub" style={{ marginTop: 4 }}>OPERATIVE RANK: {currentRank.rank} • TOTAL XP: {totalXP.toLocaleString()} • LEVEL: {userLevel}</div>
-        </div>
-        <div className="print-stats">
-          <div className="print-stat"><div className="print-stat-val">{warArchives.length}</div><div className="print-stat-lbl">MISSIONS COMPLETE</div></div>
-          <div className="print-stat"><div className="print-stat-val">{printTotalPyqs}</div><div className="print-stat-lbl">TOTAL PYQs SOLVED</div></div>
-          <div className="print-stat"><div className="print-stat-val">{printTotalHours}h</div><div className="print-stat-lbl">HOURS INVESTED</div></div>
-          <div className="print-stat"><div className="print-stat-val">{totalXP.toLocaleString()}</div><div className="print-stat-lbl">XP EARNED</div></div>
-        </div>
-        <table className="print-table">
-          <thead>
-            <tr>
-              <th>#</th><th>CHAPTER</th><th>SUBJECT</th><th>DIFFICULTY</th>
-              <th>PYQs SOLVED</th><th>TIME SPENT</th><th>XP EARNED</th><th>DATE</th>
-            </tr>
-          </thead>
-          <tbody>
-            {warArchives.map((entry, idx) => (
-              <tr key={entry.id}>
-                <td>{warArchives.length - idx}</td>
-                <td>{entry.chapterName}{entry.hadVelocityBonus ? ' ⚡' : ''}</td>
-                <td>{entry.subject}</td>
-                <td>{DIFF_LABELS_PRINT[entry.difficulty] || entry.difficulty}</td>
-                <td style={{ textAlign: 'center' }}>{entry.finalPyqCount || 0}</td>
-                <td style={{ textAlign: 'center' }}>{entry.timeSpentMinutes > 0 ? `${entry.timeSpentMinutes}m` : '—'}</td>
-                <td style={{ textAlign: 'center' }}>{entry.xpEarned}</td>
-                <td>{entry.completedDate}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="print-footer">MHT-CET NEXUS • NEURAL-WARFARE: SEASON 1 • NEURO-WARFARE PROTOCOL v4.0</div>
-      </div>
-
-      {/* ── Floating XP ── */}
+    <>
+      {/* Boot Sequence — renders above everything */}
       <AnimatePresence>
-        {xpFloatData && (
-          <XPFloatAnimation key={xpFloatData.id} xpAmount={xpFloatData.xpAmount} hasVelocityBonus={xpFloatData.hasVelocityBonus} onAnimationDone={() => setXpFloatData(null)} theme={systemTheme} />
-        )}
+        {showBoot && <BootSequence onInitialize={handleInitialize} />}
       </AnimatePresence>
 
-      {/* ── War Archive Modal ── */}
+      {/* Main App — always mounted but invisible until boot is done */}
       <AnimatePresence>
-        {showArchiveModal && (
-          <WarArchiveModal archives={warArchives} onClose={() => setShowArchiveModal(false)} totalXP={totalXP} rankName={currentRank.rank} onDownloadPDF={handleDownloadPDF} />
-        )}
-      </AnimatePresence>
-
-      {/* ── Timer Modal ── */}
-      <AnimatePresence>
-        {modalOpen && activeTimerTask && (
-          <TimerModal
-            task={activeTimerTask} onClose={handleCloseModal}
-            timerSecondsLeft={timerSecondsLeft} timerTotalSeconds={timerTotalSeconds}
-            timerIsRunning={timerIsRunning} timerIsBreak={timerIsBreak}
-            timerCompletedSessions={timerCompletedSessions}
-            onToggleTimer={handleToggleTimer} onAbortTimer={handleAbortTimer}
-            onApplyPreset={handleApplyPreset} onApplyCustomMinutes={handleApplyCustomMinutes}
-            vigilanceMode={vigilanceMode}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Focus dimmer when timer is running and modal is closed */}
-      <AnimatePresence>
-        {timerIsRunning && !modalOpen && (
+        {appReady && (
           <motion.div
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] pointer-events-none"
-            style={{ background: 'rgba(0,0,0,0.45)' }}
-          />
-        )}
-      </AnimatePresence>
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.6 }}
+            className={`min-h-screen pb-20 ${systemIntegrity < 50 ? 'glitch-scanlines glitch-body glitch-color-shift' : ''}`}
+            style={{ background: bgStyle, color: '#e0f0ff' }}
+          >
+            <style>{`
+              ${glitchCSS}
+              ${systemTheme === 'god' ? `
+                body::before {
+                  content: '';
+                  position: fixed;
+                  inset: 0;
+                  pointer-events: none;
+                  z-index: 0;
+                  background: radial-gradient(ellipse at 50% 0%, rgba(255,215,0,0.04), transparent 60%);
+                  animation: god-pulse 4s ease-in-out infinite;
+                }
+                @keyframes god-pulse {
+                  0%, 100% { opacity: 0.4; }
+                  50% { opacity: 1; }
+                }
+              ` : ''}
+              @media print {
+                body * { visibility: hidden !important; background: none !important; }
+                #archive-report, #archive-report * { visibility: visible !important; color: black !important; }
+                #archive-report {
+                  position: absolute !important; top: 0 !important; left: 0 !important;
+                  width: 100% !important; display: block !important;
+                }
+                .no-print { display: none !important; }
+                #archive-report { font-family: 'Courier New', Courier, monospace; padding: 32px; box-sizing: border-box; }
+                .print-header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #222; padding-bottom: 16px; }
+                .print-title  { font-size: 22px; font-weight: 900; letter-spacing: 4px; }
+                .print-sub    { font-size: 11px; color: #555; margin-top: 4px; letter-spacing: 2px; }
+                .print-stats  { display: flex; justify-content: space-around; margin-bottom: 20px; padding: 12px; border: 1px solid #ccc; }
+                .print-stat     { text-align: center; }
+                .print-stat-val { font-size: 22px; font-weight: 900; }
+                .print-stat-lbl { font-size: 9px; letter-spacing: 2px; color: #555; }
+                .print-table    { width: 100%; border-collapse: collapse; font-size: 11px; }
+                .print-table th { border-bottom: 2px solid #222; padding: 6px 8px; text-align: left; font-size: 9px; letter-spacing: 1px; background: #f5f5f5; }
+                .print-table td { border-bottom: 1px solid #ddd; padding: 6px 8px; }
+                .print-table tr:nth-child(even) td { background: #fafafa; }
+                .print-footer { margin-top: 20px; font-size: 9px; color: #888; text-align: center; letter-spacing: 1px; }
+                @page { margin: 1.5cm; }
+              }
+            `}</style>
 
-      {/* ══ HEADER ══ */}
-      <header className="no-print sticky top-0 z-50 border-b" style={headerStyle}>
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 flex items-center justify-center relative"
-                style={{
-                  background: systemTheme === 'god' ? 'rgba(255,215,0,0.1)' : 'rgba(0,245,255,0.1)',
-                  border: `1px solid ${systemTheme === 'god' ? 'rgba(255,215,0,0.5)' : 'rgba(0,245,255,0.5)'}`,
-                }}>
-                {systemTheme === 'god' ? <Star size={16} color="#ffd700" /> : <Atom size={16} color="#00f5ff" />}
+            {/* ── Hidden print zone ── */}
+            <div id="archive-report" style={{ display: 'none' }}>
+              <div className="print-header">
+                <div className="print-title">MHT-CET NEXUS — INTEL REPORT</div>
+                <div className="print-sub">CLASSIFIED WAR ARCHIVES • GENERATED {printGeneratedDate}</div>
+                <div className="print-sub" style={{ marginTop: 4 }}>OPERATIVE RANK: {currentRank.rank} • TOTAL XP: {totalXP.toLocaleString()} • LEVEL: {userLevel}</div>
               </div>
-              <div>
-                <div className="font-mono text-sm font-black tracking-widest"
-                  style={{ color: systemTheme === 'god' ? '#ffd700' : '#00f5ff', textShadow: systemTheme === 'god' ? '0 0 10px #ffd700' : '0 0 10px #00f5ff' }}>
-                  MHT-CET NEXUS
-                </div>
-                <div className="font-mono text-gray-600 tracking-widest" style={{ fontSize: 9 }}>
-                  NEURAL-WARFARE: SEASON 1
-                </div>
+              <div className="print-stats">
+                <div className="print-stat"><div className="print-stat-val">{warArchives.length}</div><div className="print-stat-lbl">MISSIONS COMPLETE</div></div>
+                <div className="print-stat"><div className="print-stat-val">{printTotalPyqs}</div><div className="print-stat-lbl">TOTAL PYQs SOLVED</div></div>
+                <div className="print-stat"><div className="print-stat-val">{printTotalHours}h</div><div className="print-stat-lbl">HOURS INVESTED</div></div>
+                <div className="print-stat"><div className="print-stat-val">{totalXP.toLocaleString()}</div><div className="print-stat-lbl">XP EARNED</div></div>
               </div>
+              <table className="print-table">
+                <thead>
+                  <tr>
+                    <th>#</th><th>CHAPTER</th><th>SUBJECT</th><th>DIFFICULTY</th>
+                    <th>PYQs SOLVED</th><th>TIME SPENT</th><th>XP EARNED</th><th>DATE</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {warArchives.map((entry, idx) => (
+                    <tr key={entry.id}>
+                      <td>{warArchives.length - idx}</td>
+                      <td>{entry.chapterName}{entry.hadVelocityBonus ? ' ⚡' : ''}{entry.hadPowerHour ? ' 2×' : ''}</td>
+                      <td>{entry.subject}</td>
+                      <td>{DIFF_LABELS_PRINT[entry.difficulty] || entry.difficulty}</td>
+                      <td style={{ textAlign: 'center' }}>{entry.finalPyqCount || 0}</td>
+                      <td style={{ textAlign: 'center' }}>{entry.timeSpentMinutes > 0 ? `${entry.timeSpentMinutes}m` : '—'}</td>
+                      <td style={{ textAlign: 'center' }}>{entry.xpEarned}</td>
+                      <td>{entry.completedDate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <div className="print-footer">MHT-CET NEXUS • NEURAL-WARFARE: SEASON 1 • NEURO-WARFARE PROTOCOL v4.0</div>
             </div>
 
-            <div className="flex items-center gap-3 flex-wrap justify-end">
-              {/* System Integrity */}
-              <SystemIntegrityBar integrity={systemIntegrity} />
-
-              {/* Timer status chip */}
-              {timerTaskId && (
-                <motion.button
-                  animate={timerIsRunning ? { boxShadow: ['0 0 6px #00ff41', '0 0 18px #00ff41', '0 0 6px #00ff41'] } : {}}
-                  transition={{ repeat: Infinity, duration: 1.2 }}
-                  onClick={() => activeTimerTask ? setModalOpen(true) : null}
-                  className="flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-black"
-                  style={{
-                    background: timerIsRunning ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.4)',
-                    border: `1px solid ${timerIsRunning ? '#00ff41' : '#2a3040'}`,
-                    color: timerIsRunning ? '#00ff41' : '#4a6080'
-                  }}
-                >
-                  <Clock size={11} />
-                  {String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0')}:{String(timerSecondsLeft % 60).padStart(2, '0')}
-                  {timerIsRunning && <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff41' }} />}
-                </motion.button>
+            {/* ── Floating XP ── */}
+            <AnimatePresence>
+              {xpFloatData && (
+                <XPFloatAnimation
+                  key={xpFloatData.id}
+                  xpAmount={xpFloatData.xpAmount}
+                  hasVelocityBonus={xpFloatData.hasVelocityBonus}
+                  isPowerHour={xpFloatData.isPowerHour}
+                  onAnimationDone={() => setXpFloatData(null)}
+                  theme={systemTheme}
+                />
               )}
+            </AnimatePresence>
 
-              {/* War Archives */}
-              <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
-                onClick={() => setShowArchiveModal(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
-                style={{ background: warArchives.length > 0 ? 'rgba(255,165,0,0.1)' : 'rgba(30,30,30,0.4)', border: `1px solid ${warArchives.length > 0 ? 'rgba(255,165,0,0.5)' : '#2a3040'}`, color: warArchives.length > 0 ? '#ffa500' : '#3a4a5a', fontSize: 10 }}
-              >
-                <FolderOpen size={11} />
-                <span className="hidden sm:inline">WAR ARCHIVES</span>
-                {warArchives.length > 0 && <span style={{ background: 'rgba(255,165,0,0.2)', color: '#ffa500', fontSize: 9, padding: '0 4px' }}>{warArchives.length}</span>}
-              </motion.button>
+            {/* ── Micro-Mission Modal ── */}
+            <AnimatePresence>
+              {showMicroMission && (
+                <MicroMissionModal
+                  onComplete={handleMicroMissionComplete}
+                  onAbort={handleMicroMissionAbort}
+                />
+              )}
+            </AnimatePresence>
 
-              {/* Vigilance toggle */}
-              <button onClick={() => setVigilanceMode((v) => !v)}
-                className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
-                style={{ background: vigilanceMode ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.5)', border: `1px solid ${vigilanceMode ? '#00ff41' : '#2a3f2a'}`, color: vigilanceMode ? '#00ff41' : '#3a5a3a', fontSize: 10 }}
-              >
-                {vigilanceMode ? <Eye size={11} /> : <EyeOff size={11} />} <span className="hidden sm:inline">VIGILANCE</span>
-              </button>
+            {/* ── War Archive Modal ── */}
+            <AnimatePresence>
+              {showArchiveModal && (
+                <WarArchiveModal
+                  archives={warArchives}
+                  onClose={() => setShowArchiveModal(false)}
+                  totalXP={totalXP}
+                  rankName={currentRank.rank}
+                  onDownloadPDF={handleDownloadPDF}
+                />
+              )}
+            </AnimatePresence>
 
-              <div className="text-right hidden sm:block">
-                <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>LVL {userLevel} RANK</div>
-                <div className="font-mono text-sm font-black" style={{ color: systemTheme === 'god' ? '#ffd700' : '#ff00ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #ff00ff' }}>{currentRank.rank}</div>
-              </div>
-              <div className="text-right">
-                <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>TOTAL XP</div>
-                <div className="font-mono text-sm font-black" style={{ color: '#00ff41', textShadow: '0 0 8px #00ff41' }}>{totalXP.toLocaleString()}</div>
-              </div>
-              <div className="hidden sm:block">
-                <div className="font-mono text-gray-600 mb-1" style={{ fontSize: 9 }}>{completedChapters.length}/{TOTAL_CHAPTERS}</div>
-                <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
-                  <motion.div className="h-full rounded-full"
-                    style={{ background: systemTheme === 'god' ? '#ffd700' : '#00ff41', boxShadow: systemTheme === 'god' ? '0 0 6px #ffd700' : '0 0 6px #00ff41' }}
-                    animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.8 }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
+            {/* ── Timer Modal ── */}
+            <AnimatePresence>
+              {modalOpen && activeTimerTask && (
+                <TimerModal
+                  task={activeTimerTask} onClose={handleCloseModal}
+                  timerSecondsLeft={timerSecondsLeft} timerTotalSeconds={timerTotalSeconds}
+                  timerIsRunning={timerIsRunning} timerIsBreak={timerIsBreak}
+                  timerCompletedSessions={timerCompletedSessions}
+                  onToggleTimer={handleToggleTimer} onAbortTimer={handleAbortTimer}
+                  onApplyPreset={handleApplyPreset} onApplyCustomMinutes={handleApplyCustomMinutes}
+                  vigilanceMode={vigilanceMode}
+                />
+              )}
+            </AnimatePresence>
 
-          {/* Loss Aversion warning banner */}
-          {systemIntegrity < 50 && (
-            <motion.div
-              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
-              className="mt-2 px-3 py-1.5 flex items-center gap-2"
-              style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)' }}
-            >
-              <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}>
-                <AlertTriangle size={12} color="#ff4444" />
-              </motion.div>
-              <span className="font-mono text-red-400" style={{ fontSize: 9 }}>
-                ⚠ SYSTEM INTEGRITY {Math.round(systemIntegrity)}% — NEURAL DECAY ACTIVE — START A POMODORO TO RESTORE (+{INTEGRITY_RESTORE_AMOUNT}%)
-              </span>
-            </motion.div>
-          )}
-        </div>
-      </header>
+            {/* Focus dimmer when timer is running and modal is closed */}
+            <AnimatePresence>
+              {timerIsRunning && !modalOpen && (
+                <motion.div
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] pointer-events-none"
+                  style={{ background: 'rgba(0,0,0,0.45)' }}
+                />
+              )}
+            </AnimatePresence>
 
-      <div className="max-w-7xl mx-auto px-4 pt-6 space-y-8">
+            {/* ══ POWER HOUR BANNER ══ */}
+            <AnimatePresence>
+              {isInPowerHour && <PowerHourBanner powerHourEnd={powerHourEnd} />}
+            </AnimatePresence>
 
-        {/* ══ CYBER AVATAR CARD ══ */}
-        <AvatarStatsCard stats={rpgStats} totalXP={totalXP} theme={systemTheme} />
+            {/* ══ HEADER ══ */}
+            <header className="no-print sticky top-0 z-50 border-b" style={headerStyle}>
+              <div className="max-w-7xl mx-auto px-4 py-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center relative"
+                      style={{
+                        background: systemTheme === 'god' ? 'rgba(255,215,0,0.1)' : 'rgba(0,245,255,0.1)',
+                        border: `1px solid ${systemTheme === 'god' ? 'rgba(255,215,0,0.5)' : 'rgba(0,245,255,0.5)'}`,
+                      }}>
+                      {systemTheme === 'god' ? <Star size={16} color="#ffd700" /> : <Atom size={16} color="#00f5ff" />}
+                    </div>
+                    <div>
+                      <div className="font-mono text-sm font-black tracking-widest"
+                        style={{ color: systemTheme === 'god' ? '#ffd700' : '#00f5ff', textShadow: systemTheme === 'god' ? '0 0 10px #ffd700' : '0 0 10px #00f5ff' }}>
+                        MHT-CET NEXUS
+                      </div>
+                      <div className="font-mono text-gray-600 tracking-widest" style={{ fontSize: 9 }}>
+                        NEURAL-WARFARE: SEASON 1
+                      </div>
+                    </div>
+                  </div>
 
-        {/* ══ IGNITION SWITCH ══ */}
-        <IgnitionSwitch onIgnite={handleIgnite} />
+                  <div className="flex items-center gap-3 flex-wrap justify-end">
+                    <SystemIntegrityBar integrity={systemIntegrity} />
 
-        {/* ══ SECTION 1: MISSION BUILDER ══ */}
-        <section style={{ opacity: timerIsRunning ? 0.5 : 1, transition: 'opacity 0.4s', pointerEvents: timerIsRunning ? 'none' : 'auto' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${systemTheme === 'god' ? '#ffd700' : '#00f5ff'}, transparent)` }} />
-            <span className="font-mono text-xs tracking-widest" style={{ color: systemTheme === 'god' ? '#ffd700' : '#00f5ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #00f5ff' }}>◈ TODAY&apos;S MISSION BUILDER</span>
-            <div className="h-px flex-1" style={{ background: `linear-gradient(270deg, ${systemTheme === 'god' ? '#ffd700' : '#00f5ff'}, transparent)` }} />
-          </div>
-
-          <div className="p-5 mb-5" style={{ background: 'linear-gradient(135deg, #0a1628, #060d1a)', border: '1px solid rgba(0,245,255,0.2)' }}>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-
-              {/* ① Subject */}
-              <div className="lg:col-span-1">
-                <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET SUBJECT</label>
-                <div className="relative">
-                  <select value={formSubject} onChange={(e) => handleSubjectChange(e.target.value)}
-                    className="w-full px-3 py-2 font-mono text-sm focus:outline-none appearance-none pr-8"
-                    style={{ background: 'rgba(0,245,255,0.06)', border: `1px solid ${SUBJECT_CONFIG[formSubject]?.color || '#00f5ff'}60`, color: SUBJECT_CONFIG[formSubject]?.color || '#00f5ff' }}
-                  >
-                    {Object.keys(SYLLABUS).map((subj) => (
-                      <option key={subj} value={subj} style={{ background: '#060d1a', color: '#e0f0ff' }}>{subj}</option>
-                    ))}
-                  </select>
-                  <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: SUBJECT_CONFIG[formSubject]?.color || '#00f5ff' }} />
-                </div>
-              </div>
-
-              {/* ② Chapter — only shows unlocked/uncompleted chapters */}
-              <div className="lg:col-span-2">
-                <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
-                  TARGET CHAPTER <span className="text-gray-700">({availableChapters.length} remaining)</span>
-                </label>
-                <div className="relative">
-                  {availableChapters.length === 0 ? (
-                    <div className="w-full px-3 py-2 font-mono text-xs" style={{ background: 'rgba(0,255,65,0.05)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}>✓ ALL CHAPTERS ANNIHILATED</div>
-                  ) : (
-                    <>
-                      <select value={formChapter} onChange={(e) => handleChapterChange(e.target.value)}
-                        className="w-full px-3 py-2 font-mono text-sm focus:outline-none appearance-none pr-8"
-                        style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.25)', color: '#e0f0ff' }}
+                    {/* Timer status chip */}
+                    {timerTaskId && (
+                      <motion.button
+                        animate={timerIsRunning ? { boxShadow: ['0 0 6px #00ff41', '0 0 18px #00ff41', '0 0 6px #00ff41'] } : {}}
+                        transition={{ repeat: Infinity, duration: 1.2 }}
+                        onClick={() => activeTimerTask ? setModalOpen(true) : null}
+                        className="flex items-center gap-2 px-3 py-1.5 font-mono text-xs font-black"
+                        style={{
+                          background: timerIsRunning ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.4)',
+                          border: `1px solid ${timerIsRunning ? '#00ff41' : '#2a3040'}`,
+                          color: timerIsRunning ? '#00ff41' : '#4a6080'
+                        }}
                       >
-                        {availableChapters.map((ch) => {
-                          const queued = alreadyQueuedNames.includes(ch.name);
+                        <Clock size={11} />
+                        {String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0')}:{String(timerSecondsLeft % 60).padStart(2, '0')}
+                        {timerIsRunning && <motion.div animate={{ opacity: [1, 0, 1] }} transition={{ repeat: Infinity, duration: 1 }} style={{ width: 6, height: 6, borderRadius: '50%', background: '#00ff41' }} />}
+                      </motion.button>
+                    )}
+
+                    {/* Power Hour chip in header */}
+                    {isInPowerHour && (
+                      <motion.div
+                        animate={{ opacity: [1, 0.7, 1] }}
+                        transition={{ repeat: Infinity, duration: 1 }}
+                        className="flex items-center gap-1 px-2 py-1.5 font-mono text-xs font-black"
+                        style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.5)', color: '#ffd700' }}
+                      >
+                        <Zap size={10} /> 2× POWER
+                      </motion.div>
+                    )}
+
+                    {/* War Archives */}
+                    <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
+                      onClick={() => setShowArchiveModal(true)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
+                      style={{ background: warArchives.length > 0 ? 'rgba(255,165,0,0.1)' : 'rgba(30,30,30,0.4)', border: `1px solid ${warArchives.length > 0 ? 'rgba(255,165,0,0.5)' : '#2a3040'}`, color: warArchives.length > 0 ? '#ffa500' : '#3a4a5a', fontSize: 10 }}
+                    >
+                      <FolderOpen size={11} />
+                      <span className="hidden sm:inline">WAR ARCHIVES</span>
+                      {warArchives.length > 0 && <span style={{ background: 'rgba(255,165,0,0.2)', color: '#ffa500', fontSize: 9, padding: '0 4px' }}>{warArchives.length}</span>}
+                    </motion.button>
+
+                    {/* Vigilance toggle */}
+                    <button onClick={() => setVigilanceMode((v) => !v)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
+                      style={{ background: vigilanceMode ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.5)', border: `1px solid ${vigilanceMode ? '#00ff41' : '#2a3f2a'}`, color: vigilanceMode ? '#00ff41' : '#3a5a3a', fontSize: 10 }}
+                    >
+                      {vigilanceMode ? <Eye size={11} /> : <EyeOff size={11} />} <span className="hidden sm:inline">VIGILANCE</span>
+                    </button>
+
+                    <div className="text-right hidden sm:block">
+                      <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>LVL {userLevel} RANK</div>
+                      <div className="font-mono text-sm font-black" style={{ color: systemTheme === 'god' ? '#ffd700' : '#ff00ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #ff00ff' }}>{currentRank.rank}</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-mono tracking-widest text-gray-500" style={{ fontSize: 10 }}>TOTAL XP</div>
+                      <div className="font-mono text-sm font-black" style={{ color: '#00ff41', textShadow: '0 0 8px #00ff41' }}>{totalXP.toLocaleString()}</div>
+                    </div>
+                    <div className="hidden sm:block">
+                      <div className="font-mono text-gray-600 mb-1" style={{ fontSize: 9 }}>{completedChapters.length}/{TOTAL_CHAPTERS}</div>
+                      <div className="w-24 h-1.5 rounded-full overflow-hidden" style={{ background: '#1a2f4a' }}>
+                        <motion.div className="h-full rounded-full"
+                          style={{ background: systemTheme === 'god' ? '#ffd700' : '#00ff41', boxShadow: systemTheme === 'god' ? '0 0 6px #ffd700' : '0 0 6px #00ff41' }}
+                          animate={{ width: `${progressPercent}%` }} transition={{ duration: 0.8 }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Loss Aversion warning banner */}
+                {systemIntegrity < 50 && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+                    className="mt-2 px-3 py-1.5 flex items-center gap-2"
+                    style={{ background: 'rgba(255,0,0,0.1)', border: '1px solid rgba(255,0,0,0.3)' }}
+                  >
+                    <motion.div animate={{ opacity: [1, 0.3, 1] }} transition={{ repeat: Infinity, duration: 0.8 }}>
+                      <AlertTriangle size={12} color="#ff4444" />
+                    </motion.div>
+                    <span className="font-mono text-red-400" style={{ fontSize: 9 }}>
+                      ⚠ SYSTEM INTEGRITY {Math.round(systemIntegrity)}% — NEURAL DECAY ACTIVE — START A POMODORO TO RESTORE (+{INTEGRITY_RESTORE_AMOUNT}%)
+                    </span>
+                  </motion.div>
+                )}
+              </div>
+            </header>
+
+            <div className="max-w-7xl mx-auto px-4 pt-6 space-y-8">
+
+              {/* ══ CYBER AVATAR CARD ══ */}
+              <AvatarStatsCard stats={rpgStats} totalXP={totalXP} theme={systemTheme} />
+
+              {/* ══ ENTERTAINMENT CLEARANCE ══ */}
+              <EntertainmentClearance
+                dailyPyqsSolved={dailyPyqsSolved}
+                onRedeem={(mins) => {
+                  // Could trigger a "Leisure Mode" visual in future
+                }}
+              />
+
+              {/* ══ SECTION 1: MISSION BUILDER ══ */}
+              <section style={{ opacity: timerIsRunning ? 0.5 : 1, transition: 'opacity 0.4s', pointerEvents: timerIsRunning ? 'none' : 'auto' }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${systemTheme === 'god' ? '#ffd700' : '#00f5ff'}, transparent)` }} />
+                  <span className="font-mono text-xs tracking-widest" style={{ color: systemTheme === 'god' ? '#ffd700' : '#00f5ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #00f5ff' }}>◈ TODAY&apos;S MISSION BUILDER</span>
+                  <div className="h-px flex-1" style={{ background: `linear-gradient(270deg, ${systemTheme === 'god' ? '#ffd700' : '#00f5ff'}, transparent)` }} />
+                </div>
+
+                <div className="p-5 mb-5" style={{ background: 'linear-gradient(135deg, #0a1628, #060d1a)', border: '1px solid rgba(0,245,255,0.2)' }}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+
+                    {/* ① Subject */}
+                    <div className="lg:col-span-1">
+                      <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET SUBJECT</label>
+                      <div className="relative">
+                        <select value={formSubject} onChange={(e) => handleSubjectChange(e.target.value)}
+                          className="w-full px-3 py-2 font-mono text-sm focus:outline-none appearance-none pr-8"
+                          style={{ background: 'rgba(0,245,255,0.06)', border: `1px solid ${SUBJECT_CONFIG[formSubject]?.color || '#00f5ff'}60`, color: SUBJECT_CONFIG[formSubject]?.color || '#00f5ff' }}
+                        >
+                          {Object.keys(SYLLABUS).map((subj) => (
+                            <option key={subj} value={subj} style={{ background: '#060d1a', color: '#e0f0ff' }}>{subj}</option>
+                          ))}
+                        </select>
+                        <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{ color: SUBJECT_CONFIG[formSubject]?.color || '#00f5ff' }} />
+                      </div>
+                    </div>
+
+                    {/* ② Chapter */}
+                    <div className="lg:col-span-2">
+                      <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
+                        TARGET CHAPTER <span className="text-gray-700">({availableChapters.length} remaining)</span>
+                      </label>
+                      <div className="relative">
+                        {availableChapters.length === 0 ? (
+                          <div className="w-full px-3 py-2 font-mono text-xs" style={{ background: 'rgba(0,255,65,0.05)', border: '1px solid rgba(0,255,65,0.2)', color: '#00ff41' }}>✓ ALL CHAPTERS ANNIHILATED</div>
+                        ) : (
+                          <>
+                            <select value={formChapter} onChange={(e) => handleChapterChange(e.target.value)}
+                              className="w-full px-3 py-2 font-mono text-sm focus:outline-none appearance-none pr-8"
+                              style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.25)', color: '#e0f0ff' }}
+                            >
+                              {availableChapters.map((ch) => {
+                                const queued = alreadyQueuedNames.includes(ch.name);
+                                return (
+                                  <option key={ch.name} value={ch.name} style={{ background: '#060d1a', color: queued ? '#4a6080' : '#e0f0ff' }}>
+                                    {queued ? `⟳ ${ch.name} (queued)` : ch.name}
+                                  </option>
+                                );
+                              })}
+                            </select>
+                            <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
+                          </>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* ③ Difficulty */}
+                    <div>
+                      <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
+                        DIFFICULTY {formChapter && <span className="text-gray-700">(auto)</span>}
+                      </label>
+                      <div className="flex gap-1.5">
+                        {['E', 'M', 'H'].map((dk) => {
+                          const dc  = DIFF_CONFIG[dk];
+                          const sel = formDiff === dk;
                           return (
-                            <option key={ch.name} value={ch.name} style={{ background: '#060d1a', color: queued ? '#4a6080' : '#e0f0ff' }}>
-                              {queued ? `⟳ ${ch.name} (queued)` : ch.name}
-                            </option>
+                            <button key={dk} onClick={() => setFormDiff(dk)}
+                              className="flex-1 py-2 font-mono text-xs font-black transition-all"
+                              style={{ background: sel ? `${dc.color}20` : 'rgba(0,0,0,0.3)', border: `1px solid ${sel ? dc.color : '#1a2f4a'}`, color: sel ? dc.color : '#4a6080' }}>
+                              {dk}
+                            </button>
                           );
                         })}
-                      </select>
-                      <ChevronDown size={12} className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none text-gray-500" />
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {/* ③ Difficulty */}
-              <div>
-                <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
-                  DIFFICULTY {formChapter && <span className="text-gray-700">(auto)</span>}
-                </label>
-                <div className="flex gap-1.5">
-                  {['E', 'M', 'H'].map((dk) => {
-                    const dc  = DIFF_CONFIG[dk];
-                    const sel = formDiff === dk;
-                    return (
-                      <button key={dk} onClick={() => setFormDiff(dk)}
-                        className="flex-1 py-2 font-mono text-xs font-black transition-all"
-                        style={{ background: sel ? `${dc.color}20` : 'rgba(0,0,0,0.3)', border: `1px solid ${sel ? dc.color : '#1a2f4a'}`, color: sel ? dc.color : '#4a6080' }}>
-                        {dk}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* ④ PYQ + Deploy */}
-              <div>
-                <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET PYQs</label>
-                <div className="flex gap-2">
-                  <input type="number" value={formPyqCount} onChange={(e) => setFormPyqCount(e.target.value)} min="0"
-                    className="w-16 px-2 py-2 font-mono text-sm text-center focus:outline-none"
-                    style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.2)', color: '#e0f0ff' }}
-                  />
-                  <button onClick={handleAddMission} disabled={!formChapter}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 font-mono text-xs font-black tracking-wider transition-all"
-                    style={{ background: formChapter ? 'rgba(0,245,255,0.15)' : 'rgba(20,30,40,0.4)', border: `1px solid ${formChapter ? 'rgba(0,245,255,0.6)' : 'rgba(0,245,255,0.1)'}`, color: formChapter ? '#00f5ff' : '#2a4a5a', cursor: formChapter ? 'pointer' : 'not-allowed' }}
-                  >
-                    <Plus size={14} /> DEPLOY
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Mission cards */}
-          <AnimatePresence mode="popLayout">
-            {missions.length === 0 ? (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12 border border-dashed" style={{ borderColor: '#1a2f4a' }}>
-                <Target size={32} className="mx-auto mb-3 text-gray-700" />
-                <p className="font-mono text-sm text-gray-600">NO ACTIVE MISSIONS — DEPLOY YOUR FIRST TARGET</p>
-              </motion.div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
-                {missions.map((task) => (
-                  <MissionCard
-                    key={task.id} task={task}
-                    onAnnihilate={handleAnnihilate}
-                    onOpenTimer={handleOpenTimer}
-                    onDelete={handleDeleteMission}
-                    isActiveTimer={timerTaskId === task.id}
-                    timerIsRunning={timerIsRunning}
-                  />
-                ))}
-              </div>
-            )}
-          </AnimatePresence>
-        </section>
-
-        {/* ══ SECTION 2: GLOBAL PROGRESS + RANK ══ */}
-        <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #00ff41, transparent)' }} />
-            <span className="font-mono text-xs tracking-widest" style={{ color: '#00ff41', textShadow: '0 0 8px #00ff41' }}>◈ NEXUS CORE — GLOBAL PROGRESS</span>
-            <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #00ff41, transparent)' }} />
-          </div>
-
-          <div className="p-6" style={{ background: 'linear-gradient(135deg, #061a0f, #050a0e)', border: '1px solid rgba(0,255,65,0.25)' }}>
-            <div className="grid grid-cols-3 gap-4 mb-6">
-              {[
-                { val: completedChapters.length,                  label: 'ELIMINATED',  color: '#00ff41' },
-                { val: TOTAL_CHAPTERS - completedChapters.length, label: 'REMAINING',   color: '#ffffff' },
-                { val: `${Math.round(progressPercent)}%`,         label: 'ANNIHILATED', color: '#00f5ff' },
-              ].map((s) => (
-                <div key={s.label} className="text-center">
-                  <div className="font-mono text-3xl font-black" style={{ color: s.color, textShadow: `0 0 8px ${s.color}` }}>{s.val}</div>
-                  <div className="font-mono text-gray-500 tracking-widest" style={{ fontSize: 10 }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            <div className="mb-2">
-              <div className="flex justify-between items-center mb-2">
-                <span className="font-mono text-gray-500 tracking-widest" style={{ fontSize: 10 }}>SYLLABUS DOMINATION</span>
-                <span className="font-mono text-xs" style={{ color: '#00ff41' }}>{completedChapters.length} / {TOTAL_CHAPTERS}</span>
-              </div>
-              <div className="relative h-8 overflow-hidden" style={{ background: '#050f08', border: '1px solid rgba(0,255,65,0.2)' }}>
-                <motion.div className="absolute left-0 top-0 h-full"
-                  style={{ background: systemTheme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : 'linear-gradient(90deg, #00ff41, #00f5ff)', boxShadow: systemTheme === 'god' ? '0 0 15px rgba(255,215,0,0.8)' : '0 0 15px rgba(0,255,65,0.8)' }}
-                  animate={{ width: `${progressPercent}%` }} transition={{ duration: 1 }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="font-mono text-xs font-black text-white" style={{ mixBlendMode: 'difference' }}>{Math.round(progressPercent)}% DOMINANCE</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mt-4 pt-4 border-t" style={{ borderColor: '#1a2f4a' }}>
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <Award size={14} color={systemTheme === 'god' ? '#ffd700' : '#ff00ff'} />
-                  <span className="font-mono text-xs font-black" style={{ color: systemTheme === 'god' ? '#ffd700' : '#ff00ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #ff00ff' }}>{currentRank.rank}</span>
-                </div>
-                <span className="font-mono text-xs text-gray-500">{totalXP} / {nextRank.min} XP → {nextRank.rank}</span>
-              </div>
-              <div className="h-2.5 rounded-full overflow-hidden" style={{ background: '#0a0810', border: '1px solid rgba(255,0,255,0.2)' }}>
-                <motion.div className="h-full rounded-full"
-                  style={{ background: systemTheme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : 'linear-gradient(90deg, #ff00ff, #ff69b4)', boxShadow: systemTheme === 'god' ? '0 0 10px rgba(255,215,0,0.8)' : '0 0 10px rgba(255,0,255,0.8)' }}
-                  animate={{ width: `${rankProgressPercent}%` }} transition={{ duration: 1 }}
-                />
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ══ SECTION 2.5: MEMORY HACK NODES ══ */}
-        {upcomingRevisions.length > 0 && (
-          <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #ffff00, transparent)' }} />
-              <span className="font-mono text-xs tracking-widest" style={{ color: '#ffff00', textShadow: '0 0 8px #ffff00' }}>◈ MEMORY HACK NODES</span>
-              <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #ffff00, transparent)' }} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {upcomingRevisions.map((rev) => <RevisionCard key={rev.id} revisionEntry={rev} />)}
-            </div>
-          </section>
-        )}
-
-        {/* ══ SECTION 3: THE EPISODE ROADMAP (replaces Syllabus Vault) ══ */}
-        <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #ff00ff, transparent)' }} />
-            <span className="font-mono text-xs tracking-widest" style={{ color: '#ff00ff', textShadow: '0 0 8px #ff00ff' }}>◈ SEASON 1 — EPISODE ROADMAP</span>
-            <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #ff00ff, transparent)' }} />
-          </div>
-
-          <div className="mb-3 px-1">
-            <div className="font-mono text-gray-600" style={{ fontSize: 10 }}>
-              Complete each episode to unlock the next. Add chapters directly from here or use the Mission Builder above.
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {EPISODES.map((episode) => {
-              const isLocked = !getEpisodeUnlocked(episode.id);
-              return (
-                <EpisodeCard
-                  key={episode.id}
-                  episode={episode}
-                  isLocked={isLocked}
-                  completedChapters={completedChapters}
-                  onDeployChapter={handleDeployFromEpisode}
-                  deployedNames={deployedMissionRefs}
-                />
-              );
-            })}
-          </div>
-
-          {/* Per-subject progress summary below roadmap */}
-          <div className="mt-6 grid grid-cols-3 gap-3">
-            {Object.entries(SUBJECT_CONFIG).map(([subject, sc]) => {
-              const total     = SYLLABUS[subject].length;
-              const completed = SYLLABUS[subject].filter(ch => completedChapters.includes(`${subject}::${ch.name}`)).length;
-              const pct       = (completed / total) * 100;
-              const SubIcon   = sc.icon;
-              return (
-                <div key={subject} className="p-3 flex items-center gap-3"
-                  style={{ background: 'rgba(10,16,26,0.8)', border: `1px solid ${sc.color}20` }}>
-                  <SubIcon size={16} style={{ color: sc.color, flexShrink: 0 }} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-mono text-xs font-black" style={{ color: sc.color }}>{sc.label}</span>
-                      <span className="font-mono" style={{ color: sc.color, fontSize: 9 }}>{completed}/{total}</span>
+                      </div>
                     </div>
-                    <div className="h-1 rounded-full overflow-hidden" style={{ background: '#0a1020' }}>
+
+                    {/* ④ PYQ + Deploy */}
+                    <div>
+                      <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET PYQs</label>
+                      <div className="flex gap-2">
+                        <input type="number" value={formPyqCount} onChange={(e) => setFormPyqCount(e.target.value)} min="0"
+                          className="w-16 px-2 py-2 font-mono text-sm text-center focus:outline-none"
+                          style={{ background: 'rgba(0,245,255,0.05)', border: '1px solid rgba(0,245,255,0.2)', color: '#e0f0ff' }}
+                        />
+                        <button onClick={handleAddMission} disabled={!formChapter}
+                          className="flex-1 flex items-center justify-center gap-1.5 py-2 font-mono text-xs font-black tracking-wider transition-all"
+                          style={{ background: formChapter ? 'rgba(0,245,255,0.15)' : 'rgba(20,30,40,0.4)', border: `1px solid ${formChapter ? 'rgba(0,245,255,0.6)' : 'rgba(0,245,255,0.1)'}`, color: formChapter ? '#00f5ff' : '#2a4a5a', cursor: formChapter ? 'pointer' : 'not-allowed' }}
+                        >
+                          <Plus size={14} /> DEPLOY
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Mission cards */}
+                <AnimatePresence mode="popLayout">
+                  {missions.length === 0 ? (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12 border border-dashed" style={{ borderColor: '#1a2f4a' }}>
+                      <Target size={32} className="mx-auto mb-3 text-gray-700" />
+                      <p className="font-mono text-sm text-gray-600">NO ACTIVE MISSIONS — DEPLOY YOUR FIRST TARGET</p>
+                    </motion.div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                      {missions.map((task) => (
+                        <MissionCard
+                          key={task.id}
+                          task={task}
+                          onAnnihilate={handleAnnihilate}
+                          onOpenTimer={handleOpenTimer}
+                          onDelete={handleDeleteMission}
+                          isActiveTimer={timerTaskId === task.id}
+                          timerIsRunning={timerIsRunning}
+                          onActivateOverride={handleActivateOverride}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </AnimatePresence>
+              </section>
+
+              {/* ══ SECTION 2: GLOBAL PROGRESS + RANK ══ */}
+              <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #00ff41, transparent)' }} />
+                  <span className="font-mono text-xs tracking-widest" style={{ color: '#00ff41', textShadow: '0 0 8px #00ff41' }}>◈ NEXUS CORE — GLOBAL PROGRESS</span>
+                  <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #00ff41, transparent)' }} />
+                </div>
+
+                <div className="p-6" style={{ background: 'linear-gradient(135deg, #061a0f, #050a0e)', border: '1px solid rgba(0,255,65,0.25)' }}>
+                  <div className="grid grid-cols-3 gap-4 mb-6">
+                    {[
+                      { val: completedChapters.length,                  label: 'ELIMINATED',  color: '#00ff41' },
+                      { val: TOTAL_CHAPTERS - completedChapters.length, label: 'REMAINING',   color: '#ffffff' },
+                      { val: `${Math.round(progressPercent)}%`,         label: 'ANNIHILATED', color: '#00f5ff' },
+                    ].map((s) => (
+                      <div key={s.label} className="text-center">
+                        <div className="font-mono text-3xl font-black" style={{ color: s.color, textShadow: `0 0 8px ${s.color}` }}>{s.val}</div>
+                        <div className="font-mono text-gray-500 tracking-widest" style={{ fontSize: 10 }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="mb-2">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="font-mono text-gray-500 tracking-widest" style={{ fontSize: 10 }}>SYLLABUS DOMINATION</span>
+                      <span className="font-mono text-xs" style={{ color: '#00ff41' }}>{completedChapters.length} / {TOTAL_CHAPTERS}</span>
+                    </div>
+                    <div className="relative h-8 overflow-hidden" style={{ background: '#050f08', border: '1px solid rgba(0,255,65,0.2)' }}>
+                      <motion.div className="absolute left-0 top-0 h-full"
+                        style={{ background: systemTheme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : 'linear-gradient(90deg, #00ff41, #00f5ff)', boxShadow: systemTheme === 'god' ? '0 0 15px rgba(255,215,0,0.8)' : '0 0 15px rgba(0,255,65,0.8)' }}
+                        animate={{ width: `${progressPercent}%` }} transition={{ duration: 1 }}
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className="font-mono text-xs font-black text-white" style={{ mixBlendMode: 'difference' }}>{Math.round(progressPercent)}% DOMINANCE</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t" style={{ borderColor: '#1a2f4a' }}>
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="flex items-center gap-2">
+                        <Award size={14} color={systemTheme === 'god' ? '#ffd700' : '#ff00ff'} />
+                        <span className="font-mono text-xs font-black" style={{ color: systemTheme === 'god' ? '#ffd700' : '#ff00ff', textShadow: systemTheme === 'god' ? '0 0 8px #ffd700' : '0 0 8px #ff00ff' }}>{currentRank.rank}</span>
+                      </div>
+                      <span className="font-mono text-xs text-gray-500">{totalXP} / {nextRank.min} XP → {nextRank.rank}</span>
+                    </div>
+                    <div className="h-2.5 rounded-full overflow-hidden" style={{ background: '#0a0810', border: '1px solid rgba(255,0,255,0.2)' }}>
                       <motion.div className="h-full rounded-full"
-                        style={{ background: sc.color, boxShadow: `0 0 4px ${sc.color}` }}
-                        animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }}
+                        style={{ background: systemTheme === 'god' ? 'linear-gradient(90deg, #ffd700, #ffa500)' : 'linear-gradient(90deg, #ff00ff, #ff69b4)', boxShadow: systemTheme === 'god' ? '0 0 10px rgba(255,215,0,0.8)' : '0 0 10px rgba(255,0,255,0.8)' }}
+                        animate={{ width: `${rankProgressPercent}%` }} transition={{ duration: 1 }}
                       />
                     </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
-        </section>
+              </section>
 
-        {/* ══ FOOTER ══ */}
-        <footer className="text-center py-6">
-          <div className="font-mono tracking-widest" style={{ color: systemTheme === 'god' ? 'rgba(255,215,0,0.2)' : '#1a2f4a', fontSize: 10 }}>
-            MHT-CET NEXUS • NEURAL-WARFARE: SEASON 1 • {TOTAL_CHAPTERS} CHAPTERS • 7 EPISODES
-          </div>
-          <div className="font-mono mt-1" style={{ color: '#111c2a', fontSize: 9 }}>
-            PERSISTENCE: localStorage • THEME: {systemTheme.toUpperCase()} • LEVEL: {userLevel} • SYS INTEGRITY: {Math.round(systemIntegrity)}%
-          </div>
-        </footer>
+              {/* ══ SECTION 2.5: MEMORY HACK NODES ══ */}
+              {upcomingRevisions.length > 0 && (
+                <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #ffff00, transparent)' }} />
+                    <span className="font-mono text-xs tracking-widest" style={{ color: '#ffff00', textShadow: '0 0 8px #ffff00' }}>◈ MEMORY HACK NODES</span>
+                    <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #ffff00, transparent)' }} />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                    {upcomingRevisions.map((rev) => <RevisionCard key={rev.id} revisionEntry={rev} />)}
+                  </div>
+                </section>
+              )}
 
-      </div>
-    </div>
+              {/* ══ SECTION 3: EPISODE ROADMAP ══ */}
+              <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #ff00ff, transparent)' }} />
+                  <span className="font-mono text-xs tracking-widest" style={{ color: '#ff00ff', textShadow: '0 0 8px #ff00ff' }}>◈ SEASON 1 — EPISODE ROADMAP</span>
+                  <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #ff00ff, transparent)' }} />
+                </div>
+
+                <div className="mb-3 px-1">
+                  <div className="font-mono text-gray-600" style={{ fontSize: 10 }}>
+                    Complete each episode to unlock the next. Add chapters directly from here or use the Mission Builder above.
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {EPISODES.map((episode) => {
+                    const isLocked = !getEpisodeUnlocked(episode.id);
+                    return (
+                      <EpisodeCard
+                        key={episode.id}
+                        episode={episode}
+                        isLocked={isLocked}
+                        completedChapters={completedChapters}
+                        onDeployChapter={handleDeployFromEpisode}
+                        deployedNames={deployedMissionRefs}
+                      />
+                    );
+                  })}
+                </div>
+
+                {/* Per-subject progress summary */}
+                <div className="mt-6 grid grid-cols-3 gap-3">
+                  {Object.entries(SUBJECT_CONFIG).map(([subject, sc]) => {
+                    const total     = SYLLABUS[subject].length;
+                    const completed = SYLLABUS[subject].filter(ch => completedChapters.includes(`${subject}::${ch.name}`)).length;
+                    const pct       = (completed / total) * 100;
+                    const SubIcon   = sc.icon;
+                    return (
+                      <div key={subject} className="p-3 flex items-center gap-3"
+                        style={{ background: 'rgba(10,16,26,0.8)', border: `1px solid ${sc.color}20` }}>
+                        <SubIcon size={16} style={{ color: sc.color, flexShrink: 0 }} />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-mono text-xs font-black" style={{ color: sc.color }}>{sc.label}</span>
+                            <span className="font-mono" style={{ color: sc.color, fontSize: 9 }}>{completed}/{total}</span>
+                          </div>
+                          <div className="h-1 rounded-full overflow-hidden" style={{ background: '#0a1020' }}>
+                            <motion.div className="h-full rounded-full"
+                              style={{ background: sc.color, boxShadow: `0 0 4px ${sc.color}` }}
+                              animate={{ width: `${pct}%` }} transition={{ duration: 0.8 }}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+
+              {/* ══ FOOTER ══ */}
+              <footer className="text-center py-6">
+                <div className="font-mono tracking-widest" style={{ color: systemTheme === 'god' ? 'rgba(255,215,0,0.2)' : '#1a2f4a', fontSize: 10 }}>
+                  MHT-CET NEXUS • NEURAL-WARFARE: SEASON 1 • {TOTAL_CHAPTERS} CHAPTERS • 7 EPISODES
+                </div>
+                <div className="font-mono mt-1" style={{ color: '#111c2a', fontSize: 9 }}>
+                  PERSISTENCE: localStorage • THEME: {systemTheme.toUpperCase()} • LEVEL: {userLevel} • SYS INTEGRITY: {Math.round(systemIntegrity)}% • DAILY PYQs: {dailyPyqsSolved}
+                </div>
+              </footer>
+
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
