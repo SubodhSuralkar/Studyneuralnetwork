@@ -6,7 +6,8 @@ import {
   ChevronDown, Plus, Trash2, Play, Pause, RotateCcw,
   Award, AlertTriangle, BookOpen, Atom, FlaskConical,
   Calculator, X, Brain, Activity, Flame, Timer,
-  Radio, Crosshair, Skull, Eye, EyeOff
+  Radio, Crosshair, Skull, Eye, EyeOff,
+  FolderOpen, Download, Archive
 } from 'lucide-react';
 
 // ─────────────────────────────────────────────
@@ -235,10 +236,36 @@ function VigilanceOverlay({ countdown, onResync }) {
 }
 
 // ─────────────────────────────────────────────
+// LIVE TIME SPENT DISPLAY (inside timer modal)
+// ─────────────────────────────────────────────
+function LiveTimeSpent({ taskId, running, sessionStartRef }) {
+  const [display, setDisplay] = useState(0);
+  useEffect(() => {
+    const tick = () => {
+      const saved = LS.get(`time_spent_${taskId}`, 0);
+      const live = sessionStartRef.current ? Math.floor((Date.now() - sessionStartRef.current) / 1000) : 0;
+      setDisplay(saved + live);
+    };
+    tick();
+    const id = setInterval(tick, 5000);
+    return () => clearInterval(id);
+  }, [taskId, running, sessionStartRef]);
+
+  const totalMins = Math.floor(display / 60);
+  if (totalMins === 0) return null;
+  return (
+    <div className="mt-2 text-center font-mono text-[10px] text-gray-600">
+      ⏱ {totalMins}m spent on this mission
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // TIMER COMMAND CENTER MODAL
 // ─────────────────────────────────────────────
 function TimerModal({ task, onClose, onTimerStateChange, vigilanceMode }) {
   const storageKey = `timer_${task.id}`;
+  const timeSpentKey = `time_spent_${task.id}`;
   const initState = LS.get(storageKey, { seconds: POMODORO_WORK, totalSeconds: POMODORO_WORK, running: false, isBreak: false, sessions: 0 });
 
   const [seconds, setSeconds] = useState(initState.seconds);
@@ -247,6 +274,9 @@ function TimerModal({ task, onClose, onTimerStateChange, vigilanceMode }) {
   const [isBreak, setIsBreak] = useState(initState.isBreak);
   const [sessions, setSessions] = useState(initState.sessions);
   const [customInput, setCustomInput] = useState('');
+
+  // Time tracking: accumulated elapsed seconds saved to LS
+  const sessionStartRef = useRef(null); // wall-clock when current run started
 
   // Vigilance state
   const [vigilanceWarning, setVigilanceWarning] = useState(false);
@@ -344,12 +374,33 @@ function TimerModal({ task, onClose, onTimerStateChange, vigilanceMode }) {
   };
 
   useEffect(() => {
-    return () => { save(seconds, totalSeconds, false, isBreak, sessions); };
-  }, [seconds, totalSeconds, isBreak, sessions, save]);
+    return () => {
+      flushTimeSpent();
+      save(seconds, totalSeconds, false, isBreak, sessions);
+    };
+  }, [seconds, totalSeconds, isBreak, sessions, save, flushTimeSpent]);
+
+  const flushTimeSpent = useCallback(() => {
+    if (sessionStartRef.current !== null) {
+      const elapsed = Math.floor((Date.now() - sessionStartRef.current) / 1000);
+      const prev = LS.get(timeSpentKey, 0);
+      LS.set(timeSpentKey, prev + elapsed);
+      sessionStartRef.current = null;
+    }
+  }, [timeSpentKey]);
 
   const toggle = () => {
     recordActivity();
-    setRunning(r => !r);
+    setRunning(r => {
+      if (!r) {
+        // Starting — record wall-clock start
+        sessionStartRef.current = Date.now();
+      } else {
+        // Pausing — flush accumulated time
+        flushTimeSpent();
+      }
+      return !r;
+    });
   };
 
   const applyPreset = (presetSeconds) => {
@@ -370,6 +421,7 @@ function TimerModal({ task, onClose, onTimerStateChange, vigilanceMode }) {
 
   const reset = () => {
     recordActivity();
+    flushTimeSpent();
     setRunning(false);
     setSeconds(POMODORO_WORK);
     setTotalSeconds(POMODORO_WORK);
@@ -511,6 +563,8 @@ function TimerModal({ task, onClose, onTimerStateChange, vigilanceMode }) {
             TARGET: {task.pyqs} PYQs
           </div>
         )}
+        {/* Live time spent display */}
+        <LiveTimeSpent taskId={task.id} running={running} sessionStartRef={sessionStartRef} />
       </motion.div>
     </motion.div>
   );
@@ -797,6 +851,220 @@ function ChapterItem({ chapter, isCompleted, delay }) {
 }
 
 // ─────────────────────────────────────────────
+// WAR ARCHIVE MODAL
+// ─────────────────────────────────────────────
+function WarArchiveModal({ archives, onClose, totalXP, rank }) {
+  const totalPYQs = archives.reduce((s, a) => s + (a.finalPYQCount || 0), 0);
+  const totalMins = archives.reduce((s, a) => s + (a.timeSpentMinutes || 0), 0);
+  const totalHours = (totalMins / 60).toFixed(1);
+
+  const DIFF_LABELS = { H: 'BOSS', M: 'ELITE', E: 'MINION' };
+  const DIFF_COLORS = { H: '#ff00ff', M: '#ff6b00', E: '#00ff41' };
+  const SUBJECT_COLORS = { Physics: '#00f5ff', Chemistry: '#ff00ff', Mathematics: '#00ff41' };
+
+  const handlePrint = () => {
+    // Inject print styles then trigger print
+    const styleId = 'nexus-print-styles';
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement('style');
+      style.id = styleId;
+      style.innerHTML = `
+        @media print {
+          body * { visibility: hidden !important; }
+          #nexus-print-zone, #nexus-print-zone * { visibility: visible !important; }
+          #nexus-print-zone {
+            position: fixed !important;
+            top: 0 !important; left: 0 !important;
+            width: 100vw !important;
+            background: white !important;
+            color: #111 !important;
+            font-family: 'Courier New', monospace !important;
+            padding: 32px !important;
+            box-sizing: border-box !important;
+          }
+          .print-header { text-align: center; margin-bottom: 24px; border-bottom: 2px solid #222; padding-bottom: 16px; }
+          .print-title { font-size: 22px; font-weight: 900; letter-spacing: 4px; }
+          .print-sub { font-size: 11px; color: #555; margin-top: 4px; letter-spacing: 2px; }
+          .print-stats { display: flex; justify-content: space-around; margin-bottom: 20px; padding: 12px; border: 1px solid #ccc; }
+          .print-stat { text-align: center; }
+          .print-stat-val { font-size: 22px; font-weight: 900; }
+          .print-stat-lbl { font-size: 9px; letter-spacing: 2px; color: #555; }
+          .print-table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          .print-table th { border-bottom: 2px solid #222; padding: 6px 8px; text-align: left; font-size: 9px; letter-spacing: 1px; background: #f5f5f5; }
+          .print-table td { border-bottom: 1px solid #ddd; padding: 6px 8px; }
+          .print-table tr:nth-child(even) td { background: #fafafa; }
+          .print-footer { margin-top: 20px; font-size: 9px; color: #888; text-align: center; letter-spacing: 1px; }
+          @page { margin: 1.5cm; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+    window.print();
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[9980] flex items-center justify-center p-4"
+      style={{ background: 'rgba(0,0,0,0.92)', backdropFilter: 'blur(8px)' }}
+      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <motion.div
+        initial={{ scale: 0.88, y: 30 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.88, y: 30 }}
+        transition={{ type: 'spring', damping: 22 }}
+        className="relative clip-corner w-full max-w-4xl max-h-[90vh] flex flex-col"
+        style={{ background: 'linear-gradient(135deg, #080e18, #04080f)', border: '1px solid rgba(255,165,0,0.4)', boxShadow: '0 0 40px rgba(255,165,0,0.15), 0 0 80px rgba(255,165,0,0.06)' }}
+      >
+        {/* Terminal header bar */}
+        <div className="flex items-center justify-between px-5 py-3 border-b" style={{ borderColor: 'rgba(255,165,0,0.2)', background: 'rgba(255,165,0,0.04)' }}>
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <div className="w-2.5 h-2.5 rounded-full bg-red-500 opacity-60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-yellow-500 opacity-60" />
+              <div className="w-2.5 h-2.5 rounded-full bg-green-500 opacity-60" />
+            </div>
+            <span className="font-mono text-[10px] text-gray-600 tracking-widest">nexus@mhtcet:~/WAR_ARCHIVES$</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={handlePrint}
+              className="clip-corner-sm flex items-center gap-1.5 px-3 py-1.5 font-display text-[10px] font-black tracking-wider"
+              style={{ background: 'rgba(0,245,255,0.08)', border: '1px solid rgba(0,245,255,0.35)', color: '#00f5ff' }}
+            >
+              <Download size={11} /> DOWNLOAD INTEL REPORT
+            </motion.button>
+            <button onClick={onClose} className="text-gray-600 hover:text-white transition-colors ml-2">
+              <X size={18} />
+            </button>
+          </div>
+        </div>
+
+        {/* Title */}
+        <div className="px-5 pt-4 pb-2">
+          <div className="font-display text-lg font-black tracking-widest" style={{ color: '#ffa500', textShadow: '0 0 16px rgba(255,165,0,0.5)' }}>
+            📂 WAR ARCHIVES — CLASSIFIED INTEL
+          </div>
+          <div className="font-mono text-[10px] text-gray-600 mt-0.5">Missions annihilated: {archives.length} | Rank: {rank}</div>
+        </div>
+
+        {/* Stats summary strip */}
+        <div className="mx-5 mb-3 grid grid-cols-4 gap-2">
+          {[
+            { val: archives.length, label: 'MISSIONS COMPLETE' },
+            { val: totalPYQs, label: 'TOTAL PYQs SOLVED' },
+            { val: `${totalHours}h`, label: 'HOURS INVESTED' },
+            { val: totalXP.toLocaleString(), label: 'TOTAL XP EARNED' },
+          ].map(s => (
+            <div key={s.label} className="clip-corner-sm p-2 text-center" style={{ background: 'rgba(255,165,0,0.05)', border: '1px solid rgba(255,165,0,0.15)' }}>
+              <div className="font-display text-lg font-black" style={{ color: '#ffa500' }}>{s.val}</div>
+              <div className="font-mono text-[8px] text-gray-600 tracking-wider">{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-y-auto px-5 pb-5" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,165,0,0.3) transparent' }}>
+          {archives.length === 0 ? (
+            <div className="text-center py-16">
+              <Archive size={36} className="mx-auto mb-3" style={{ color: 'rgba(255,165,0,0.3)' }} />
+              <div className="font-mono text-sm text-gray-700">NO MISSIONS ARCHIVED YET</div>
+              <div className="font-mono text-xs text-gray-800 mt-1">Annihilate missions to populate this database</div>
+            </div>
+          ) : (
+            <table className="w-full" style={{ borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid rgba(255,165,0,0.2)' }}>
+                  {['#', 'CHAPTER', 'SUBJECT', 'DIFF', 'PYQs', 'TIME', 'XP', 'DATE'].map(h => (
+                    <th key={h} className="text-left py-2 px-2 font-mono text-[9px] tracking-widest" style={{ color: 'rgba(255,165,0,0.6)' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {archives.map((entry, i) => (
+                  <motion.tr
+                    key={entry.id}
+                    initial={{ opacity: 0, x: -10 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.03 }}
+                    style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}
+                    className="hover:bg-white hover:bg-opacity-[0.02] transition-colors"
+                  >
+                    <td className="py-2 px-2 font-mono text-[10px] text-gray-700">{archives.length - i}</td>
+                    <td className="py-2 px-2">
+                      <div className="font-body text-sm text-white font-semibold">{entry.chapterName}</div>
+                      {entry.velocityBonus && <div className="font-mono text-[8px] text-yellow-500">⚡ VELOCITY BONUS</div>}
+                    </td>
+                    <td className="py-2 px-2 font-mono text-[10px]" style={{ color: SUBJECT_COLORS[entry.subject] || '#aaa' }}>{entry.subject}</td>
+                    <td className="py-2 px-2">
+                      <span className="font-display text-[9px] px-1.5 py-0.5 border" style={{ color: DIFF_COLORS[entry.difficulty], borderColor: `${DIFF_COLORS[entry.difficulty]}50`, background: `${DIFF_COLORS[entry.difficulty]}10` }}>
+                        {DIFF_LABELS[entry.difficulty] || entry.difficulty}
+                      </span>
+                    </td>
+                    <td className="py-2 px-2 font-mono text-[11px] text-white">{entry.finalPYQCount || 0}</td>
+                    <td className="py-2 px-2 font-mono text-[10px] text-gray-400">
+                      {entry.timeSpentMinutes > 0 ? `${entry.timeSpentMinutes}m` : '—'}
+                    </td>
+                    <td className="py-2 px-2 font-mono text-[10px]" style={{ color: '#ffa500' }}>{entry.xpEarned}</td>
+                    <td className="py-2 px-2 font-mono text-[9px] text-gray-600">
+                      <div>{entry.completedDate}</div>
+                      <div className="text-gray-700">{entry.completedTime}</div>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </motion.div>
+
+      {/* ── PRINT ZONE (invisible on screen, visible on print) ── */}
+      <div id="nexus-print-zone" style={{ display: 'none' }}>
+        <div className="print-header">
+          <div className="print-title">MHT-CET NEXUS — INTEL REPORT</div>
+          <div className="print-sub">CLASSIFIED WAR ARCHIVES • GENERATED {new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase()}</div>
+          <div className="print-sub" style={{ marginTop: 4 }}>OPERATIVE RANK: {rank} • TOTAL XP: {totalXP.toLocaleString()}</div>
+        </div>
+        <div className="print-stats">
+          <div className="print-stat"><div className="print-stat-val">{archives.length}</div><div className="print-stat-lbl">MISSIONS COMPLETE</div></div>
+          <div className="print-stat"><div className="print-stat-val">{totalPYQs}</div><div className="print-stat-lbl">TOTAL PYQs SOLVED</div></div>
+          <div className="print-stat"><div className="print-stat-val">{totalHours}h</div><div className="print-stat-lbl">HOURS INVESTED</div></div>
+          <div className="print-stat"><div className="print-stat-val">{totalXP.toLocaleString()}</div><div className="print-stat-lbl">XP EARNED</div></div>
+        </div>
+        <table className="print-table">
+          <thead>
+            <tr>
+              <th>#</th><th>CHAPTER</th><th>SUBJECT</th><th>DIFFICULTY</th>
+              <th>PYQs SOLVED</th><th>TIME SPENT</th><th>XP EARNED</th><th>DATE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {archives.map((e, i) => (
+              <tr key={e.id}>
+                <td>{archives.length - i}</td>
+                <td>{e.chapterName}{e.velocityBonus ? ' ⚡' : ''}</td>
+                <td>{e.subject}</td>
+                <td>{DIFF_LABELS[e.difficulty] || e.difficulty}</td>
+                <td style={{ textAlign: 'center' }}>{e.finalPYQCount || 0}</td>
+                <td style={{ textAlign: 'center' }}>{e.timeSpentMinutes > 0 ? `${e.timeSpentMinutes}m` : '—'}</td>
+                <td style={{ textAlign: 'center' }}>{e.xpEarned}</td>
+                <td>{e.completedDate}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <div className="print-footer">MHT-CET NEXUS • NEURO-WARFARE PROTOCOL v3.0 • PERSISTENCE: localStorage • ALL DATA IS PROPERTY OF THE OPERATIVE</div>
+      </div>
+    </motion.div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // IGNITION SWITCH (Emergency Override)
 // ─────────────────────────────────────────────
 function IgnitionSwitch({ onIgnite }) {
@@ -866,6 +1134,8 @@ export default function App() {
   const [xpFloat, setXpFloat] = useState(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [vigilanceMode, setVigilanceMode] = useState(() => LS.get('vigilance_mode', false));
+  const [warArchives, setWarArchives] = useState(() => LS.get('WAR_ARCHIVES', []));
+  const [showArchive, setShowArchive] = useState(false);
 
   // Mission builder — chapter selected by dropdown, not free text
   const getDefaultChapter = (subject, completed) => {
@@ -957,6 +1227,28 @@ export default function App() {
     setTotalXP(prev => prev + xpAwarded);
     setXpFloat({ xp: xpAwarded, bonus: bonusActive, id: Date.now() });
 
+    // ── WAR ARCHIVES entry ──
+    if (!task.isMicro) {
+      const timeSpentSeconds = LS.get(`time_spent_${task.id}`, 0);
+      const solvedCount = LS.get(`solved_${task.id}`, 0);
+      const archiveEntry = {
+        id: task.id,
+        chapterName: task.name,
+        subject: task.subject,
+        difficulty: task.diff,
+        finalPYQCount: solvedCount,
+        timeSpentMinutes: Math.round(timeSpentSeconds / 60),
+        xpEarned: xpAwarded,
+        velocityBonus: bonusActive,
+        completedAt: Date.now(),
+        completedDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+        completedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+      };
+      const existing = LS.get('WAR_ARCHIVES', []);
+      LS.set('WAR_ARCHIVES', [archiveEntry, ...existing]);
+      setWarArchives(prev => [archiveEntry, ...prev]);
+    }
+
     // Revisions for real chapters
     if (!task.isMicro) {
       const now = Date.now();
@@ -970,6 +1262,7 @@ export default function App() {
 
     localStorage.removeItem(`timer_${task.id}`);
     localStorage.removeItem(`solved_${task.id}`);
+    localStorage.removeItem(`time_spent_${task.id}`);
     fireConfetti(task.diff);
   };
 
@@ -993,6 +1286,18 @@ export default function App() {
       {/* XP Float */}
       <AnimatePresence>
         {xpFloat && <XPFloat key={xpFloat.id} xp={xpFloat.xp} bonus={xpFloat.bonus} onDone={() => setXpFloat(null)} />}
+      </AnimatePresence>
+
+      {/* War Archive Modal */}
+      <AnimatePresence>
+        {showArchive && (
+          <WarArchiveModal
+            archives={warArchives}
+            onClose={() => setShowArchive(false)}
+            totalXP={totalXP}
+            rank={rank.rank}
+          />
+        )}
       </AnimatePresence>
 
       {/* Timer Modal */}
@@ -1034,6 +1339,28 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* War Archives button */}
+            <motion.button
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
+              onClick={() => setShowArchive(true)}
+              className="clip-corner-sm flex items-center gap-1.5 px-3 py-1.5 font-display text-[10px] font-black tracking-wider transition-all"
+              style={{
+                background: warArchives.length > 0 ? 'rgba(255,165,0,0.1)' : 'rgba(30,30,30,0.4)',
+                border: `1px solid ${warArchives.length > 0 ? 'rgba(255,165,0,0.5)' : '#2a3040'}`,
+                color: warArchives.length > 0 ? '#ffa500' : '#3a4a5a',
+                boxShadow: warArchives.length > 0 ? '0 0 10px rgba(255,165,0,0.2)' : 'none',
+              }}
+            >
+              <FolderOpen size={11} />
+              <span className="hidden sm:inline">WAR ARCHIVES</span>
+              {warArchives.length > 0 && (
+                <span className="font-mono text-[9px] px-1 py-0.5 rounded" style={{ background: 'rgba(255,165,0,0.2)', color: '#ffa500' }}>
+                  {warArchives.length}
+                </span>
+              )}
+            </motion.button>
+
             {/* Vigilance Toggle */}
             <button
               onClick={() => setVigilanceMode(v => !v)}
