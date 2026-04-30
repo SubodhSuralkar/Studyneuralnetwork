@@ -1912,6 +1912,319 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
 // SECTION 6 — MAIN APP
 // ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════
+// SECTION 5.5 — NEURAL CALENDAR (TEMPORAL WAR-MAP)
+// ═══════════════════════════════════════════════════════════════════
+
+const WAR_START_KEY  = 'war_start_date';
+const CAMPAIGN_DAYS  = 8;
+
+function NeuralCalendar({ completedChapters, warArchives, totalChapters, onWarStartInit }) {
+  const [now, setNow] = useState(Date.now());
+
+  // Tick every minute so the countdown stays live
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ── War-start date (persisted) ────────────────────────────────────
+  const warStartStr = useMemo(() => {
+    const saved = LS.get(WAR_START_KEY, null);
+    if (saved) return saved;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const str = today.toISOString().slice(0, 10);
+    LS.set(WAR_START_KEY, str);
+    if (onWarStartInit) onWarStartInit(str);
+    return str;
+  }, [onWarStartInit]);
+
+  const warStart = useMemo(() => {
+    const d = new Date(warStartStr);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [warStartStr]);
+
+  const today = useMemo(() => {
+    const d = new Date(now);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  }, [now]);
+
+  const dayIndex = Math.floor((today - warStart) / 86_400_000);
+
+  // ── Per-day completions from warArchives ──────────────────────────
+  const dayCompletions = useMemo(() => {
+    const map = {};
+    warArchives.forEach((entry) => {
+      if (!entry.completedAt) return;
+      const d = new Date(entry.completedAt);
+      d.setHours(0, 0, 0, 0);
+      const idx = Math.floor((d - warStart) / 86_400_000);
+      if (idx < 0 || idx >= CAMPAIGN_DAYS) return;
+      if (!map[idx]) map[idx] = [];
+      map[idx].push(entry.chapterName);
+    });
+    return map;
+  }, [warArchives, warStart]);
+
+  // ── Velocity: rolling 3-day average ──────────────────────────────
+  const velocity = useMemo(() => {
+    const start = Math.max(0, dayIndex - 2);
+    let total = 0, days = 0;
+    for (let i = start; i <= dayIndex; i++) {
+      total += (dayCompletions[i] || []).length;
+      days++;
+    }
+    return days > 0 ? total / days : 0;
+  }, [dayCompletions, dayIndex]);
+
+  const remaining      = totalChapters - completedChapters.length;
+  const projectedDays  = velocity > 0 ? Math.ceil(remaining / velocity) : null;
+  const projectedDate  = projectedDays !== null
+    ? new Date(today.getTime() + projectedDays * 86_400_000) : null;
+  const daysLeft       = Math.max(0, CAMPAIGN_DAYS - 1 - dayIndex);
+
+  const isAhead  = velocity >= 2;
+  const isBehind = velocity < 1 && remaining > 0;
+  const statusColor = isAhead ? '#00ff41' : isBehind ? '#ff3333' : '#ff6b00';
+  const projColor   = isAhead ? '#00ff41' : isBehind ? '#ff3333' : '#ffff00';
+
+  // ── Intel card data ───────────────────────────────────────────────
+  const intelCards = [
+    {
+      val:   daysLeft,
+      label: 'DAYS REMAINING',
+      color: daysLeft <= 2 ? '#ff3333' : '#ff6b00',
+    },
+    {
+      val:   velocity > 0 ? velocity.toFixed(1) : '0.0',
+      label: 'CH/DAY VELOCITY',
+      color: '#00f5ff',
+    },
+    {
+      val:   projectedDays != null ? `${projectedDays}d` : '∞',
+      label: 'PROJECTED BREACH',
+      color: projColor,
+    },
+  ];
+
+  // ── Status message ────────────────────────────────────────────────
+  let statusMsg;
+  if (remaining === 0) {
+    statusMsg = '✓ ALL CHAPTERS ANNIHILATED. SYLLABUS DOMINATED.';
+  } else if (velocity === 0) {
+    statusMsg = 'NO VELOCITY RECORDED — BEGIN MISSIONS TO PLOT TRAJECTORY.';
+  } else {
+    const dateStr = projectedDate
+      ? projectedDate.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }).toUpperCase()
+      : '?';
+    statusMsg = `AT CURRENT RATE (${velocity.toFixed(1)} CH/DAY), BREACH IN ${projectedDays} DAYS — PROJECTED: ${dateStr}.`;
+  }
+
+  const bgStatus = isAhead ? 'rgba(0,255,65,.08)'  : isBehind ? 'rgba(255,30,30,.08)'  : 'rgba(255,107,0,.08)';
+  const brStatus = isAhead ? 'rgba(0,255,65,.25)'  : isBehind ? 'rgba(255,30,30,.25)'  : 'rgba(255,107,0,.25)';
+
+  return (
+    <section style={{ fontFamily: 'monospace' }}>
+      {/* Section header */}
+      <div className="flex items-center gap-3 mb-5">
+        <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg,#ff6b00,transparent)' }} />
+        <motion.span
+          animate={{ opacity: [1, 0.6, 1] }}
+          transition={{ repeat: Infinity, duration: 2.5 }}
+          className="font-mono text-xs tracking-widest"
+          style={{ color: '#ff6b00', textShadow: '0 0 8px #ff6b00' }}
+        >
+          ◈ TEMPORAL WAR-MAP — 8-DAY CAMPAIGN
+        </motion.span>
+        <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg,#ff6b00,transparent)' }} />
+      </div>
+
+      {/* Intel cards */}
+      <div className="grid grid-cols-3 gap-2.5 mb-4">
+        {intelCards.map((c) => (
+          <div key={c.label} className="p-3"
+            style={{ background: 'rgba(0,0,0,.3)', border: `1px solid ${c.color}30` }}>
+            <div className="font-mono text-2xl font-black"
+              style={{ color: c.color, textShadow: `0 0 10px ${c.color}60` }}>{c.val}</div>
+            <div className="font-mono mt-1" style={{ color: `${c.color}80`, fontSize: 9, letterSpacing: '0.15em' }}>
+              {c.label}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Status bar */}
+      <motion.div
+        className="flex items-center gap-2.5 px-4 py-2.5 mb-4 font-mono"
+        style={{
+          background: bgStatus,
+          border: `1px solid ${brStatus}`,
+          color: statusColor,
+          fontSize: 11,
+          letterSpacing: '0.06em',
+        }}
+      >
+        <motion.div
+          animate={{ opacity: [1, 0.2, 1], scale: [1, 1.5, 1] }}
+          transition={{ repeat: Infinity, duration: 1.4 }}
+          style={{ width: 7, height: 7, borderRadius: '50%', background: statusColor, flexShrink: 0 }}
+        />
+        {statusMsg}
+      </motion.div>
+
+      {/* 8-day grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 mb-3">
+        {Array.from({ length: CAMPAIGN_DAYS }, (_, d) => {
+          const isPast    = d < dayIndex;
+          const isCurrent = d === dayIndex;
+
+          const dayDate = new Date(warStart.getTime() + d * 86_400_000);
+          const dayLabel = dayDate.toLocaleDateString('en-IN', {
+            weekday: 'short', day: '2-digit', month: 'short',
+          }).toUpperCase();
+
+          const chapters  = dayCompletions[d] || [];
+          const chapCount = chapters.length;
+
+          let borderColor, bgColor, numColor, badgeText;
+          if (isCurrent) {
+            borderColor = '#00f5ff';
+            bgColor     = 'rgba(0,245,255,.05)';
+            numColor    = '#00f5ff';
+            badgeText   = 'YOU ARE HERE';
+          } else if (isPast) {
+            borderColor = chapCount > 0 ? 'rgba(0,255,65,.4)'   : 'rgba(40,50,70,.4)';
+            bgColor     = chapCount > 0 ? 'rgba(0,255,65,.04)'  : 'rgba(10,10,18,.5)';
+            numColor    = chapCount > 0 ? '#00ff41' : '#2a3a4a';
+            badgeText   = chapCount > 0 ? `${chapCount} CLEARED` : 'PASSED';
+          } else {
+            borderColor = 'rgba(40,60,100,.3)';
+            bgColor     = 'rgba(8,12,22,.4)';
+            numColor    = '#253545';
+            badgeText   = 'INCOMING';
+          }
+
+          return (
+            <motion.div
+              key={d}
+              animate={isCurrent ? {
+                boxShadow: [
+                  '0 0 10px rgba(0,245,255,.15)',
+                  '0 0 24px rgba(0,245,255,.30)',
+                  '0 0 10px rgba(0,245,255,.15)',
+                ],
+                borderColor: ['rgba(0,245,255,.6)', 'rgba(0,245,255,1)', 'rgba(0,245,255,.6)'],
+              } : {}}
+              transition={isCurrent ? { repeat: Infinity, duration: 2 } : {}}
+              className="relative overflow-hidden p-3"
+              style={{ background: bgColor, border: `1px solid ${borderColor}` }}
+            >
+              {/* Diagonal strike for past days */}
+              {isPast && (
+                <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 0 }}>
+                  <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg"
+                    style={{ position: 'absolute', top: 0, left: 0 }}>
+                    <line x1="0" y1="0" x2="100%" y2="100%"
+                      stroke={chapCount > 0 ? 'rgba(0,255,65,.15)' : 'rgba(40,55,80,.3)'}
+                      strokeWidth="1.5" />
+                  </svg>
+                </div>
+              )}
+
+              <div className="relative" style={{ zIndex: 1 }}>
+                {/* Day number + badge */}
+                <div className="flex items-start justify-between mb-1.5">
+                  <div>
+                    <div className="font-mono font-black text-lg leading-none"
+                      style={{ color: numColor, textShadow: `0 0 8px ${numColor}60` }}>
+                      D{d + 1}
+                    </div>
+                    <div className="font-mono mt-0.5" style={{ color: `${numColor}70`, fontSize: 8, letterSpacing: '0.1em' }}>
+                      {dayLabel}
+                    </div>
+                  </div>
+                  <div className="font-mono px-1.5 py-0.5"
+                    style={{
+                      color: numColor,
+                      border: `1px solid ${numColor}40`,
+                      background: `${numColor}12`,
+                      fontSize: 7,
+                      letterSpacing: '0.1em',
+                    }}>
+                    {badgeText}
+                  </div>
+                </div>
+
+                {/* "YOU ARE HERE" indicator */}
+                {isCurrent && (
+                  <div className="flex items-center gap-1.5 mb-2">
+                    <motion.div
+                      animate={{ opacity: [1, 0.3, 1], scale: [1, 1.6, 1] }}
+                      transition={{ repeat: Infinity, duration: 1 }}
+                      style={{ width: 5, height: 5, borderRadius: '50%', background: '#00f5ff', flexShrink: 0 }}
+                    />
+                    <span className="font-mono" style={{ color: '#00f5ff', fontSize: 8, letterSpacing: '0.18em' }}>
+                      ACTIVE
+                    </span>
+                  </div>
+                )}
+
+                {/* Chapter chips */}
+                {chapters.length > 0 ? (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {chapters.slice(0, 3).map((ch) => (
+                      <span key={ch} className="font-mono px-1.5 py-0.5"
+                        style={{
+                          color: isPast ? '#00ff41' : '#00f5ff',
+                          border: `1px solid ${isPast ? 'rgba(0,255,65,.3)' : 'rgba(0,245,255,.3)'}`,
+                          background: 'rgba(0,0,0,.2)',
+                          fontSize: 7,
+                        }}>
+                        {ch.length > 14 ? ch.slice(0, 12) + '…' : ch}
+                      </span>
+                    ))}
+                    {chapters.length > 3 && (
+                      <span className="font-mono px-1.5 py-0.5"
+                        style={{ color: '#3a5a7a', border: '1px solid rgba(50,80,120,.3)', background: 'rgba(0,0,0,.2)', fontSize: 7 }}>
+                        +{chapters.length - 3}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="font-mono mt-1" style={{ color: '#1e2e40', fontSize: 8 }}>
+                    {isPast ? 'NO MISSIONS LOGGED' : 'AWAITING ORDERS'}
+                  </div>
+                )}
+
+                {/* Mini progress bar for past/current */}
+                {(isPast || isCurrent) && (
+                  <div className="mt-2.5 h-0.5 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,.06)' }}>
+                    <motion.div className="h-full"
+                      style={{ background: numColor }}
+                      animate={{ width: `${Math.round(Math.min(100, (completedChapters.length / totalChapters) * 100))}%` }}
+                      transition={{ duration: 0.8 }}
+                    />
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Formula footnote */}
+      <div className="font-mono px-1" style={{ color: 'rgba(60,90,130,.5)', fontSize: 9, letterSpacing: '0.06em' }}>
+        FORMULA: DaysRequired = {remaining} remaining ÷ {velocity > 0 ? velocity.toFixed(2) : '?'} ch/day
+        = {projectedDays ?? '∞'} days &nbsp;|&nbsp; WAR START: {warStartStr} &nbsp;|&nbsp;
+        CAMPAIGN DAY: {Math.min(dayIndex + 1, CAMPAIGN_DAYS)}/{CAMPAIGN_DAYS}
+      </div>
+    </section>
+  );
+}
+
 export default function App() {
 
   // ── BOOT SEQUENCE STATE ───────────────────────────────────────────────────────
@@ -2183,6 +2496,12 @@ export default function App() {
     LS.set('power_hour_end', end);
     firePowerHourConfetti();
     playNeuralSync();
+      //  stamp war-start on first login
+  if (!LS.get(WAR_START_KEY, null)) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    LS.set(WAR_START_KEY, today.toISOString().slice(0, 10));
+  }
   }, []);
 
   // ── EPISODE UNLOCK HELPER ─────────────────────────────────────────────────────
@@ -3016,7 +3335,12 @@ export default function App() {
                   PERSISTENCE: localStorage • THEME: {systemTheme.toUpperCase()} • LEVEL: {userLevel} • SYS INTEGRITY: {Math.round(systemIntegrity)}% • DAILY PYQs: {dailyPyqsSolved}
                 </div>
               </footer>
-
+{/* ══ SECTION 4: TEMPORAL WAR-MAP ══ */}
+<NeuralCalendar
+  completedChapters={completedChapters}
+  warArchives={warArchives}
+  totalChapters={TOTAL_CHAPTERS}
+/>
             </div>
           </motion.div>
         )}
