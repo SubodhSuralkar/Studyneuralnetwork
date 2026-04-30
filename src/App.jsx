@@ -145,12 +145,12 @@ const SUBJECT_PRINT_COLORS = {
 
 const RANK_THRESHOLDS = [
   { rank: 'CADET',       min: 0,      max: 5000   },
-  { rank: 'RECRUIT',     min: 5000,   max: 12000  },
-  { rank: 'SPECIALIST',  min: 12000,  max: 25000  },
-  { rank: 'OPERATIVE',   min: 25000,  max: 45000  },
-  { rank: 'COMMANDER',   min: 45000,  max: 70000  },
-  { rank: 'WARLORD',     min: 70000,  max: 100000 },
-  { rank: 'NEXUS ELITE', min: 100000, max: 999999 },
+  { rank: 'RECRUIT',     min: 50000,   max: 120000  },
+  { rank: 'SPECIALIST',  min: 120000,  max: 250000  },
+  { rank: 'OPERATIVE',   min: 250000,  max: 450000  },
+  { rank: 'COMMANDER',   min: 450000,  max: 700000  },
+  { rank: 'WARLORD',     min: 700000,  max: 1000000 },
+  { rank: 'NEXUS ELITE', min: 1000000, max: 9999999 },
 ];
 
 const TIMER_PRESETS = [
@@ -160,10 +160,10 @@ const TIMER_PRESETS = [
 ];
 
 const LEVEL_THRESHOLDS = [
-  0, 2000, 5000, 9000, 14000,
-  20000, 28000, 37000, 47000, 58000,
-  71000, 86000, 103000, 122000, 143000,
-  167000, 194000, 224000, 257000, 999999,
+  0, 20000, 50000, 90000, 140000,
+  200000, 280000, 370000, 470000, 580000,
+  710000, 860000, 1030000, 1220000, 1430000,
+  1670000, 1940000, 2240000, 2570000, 9999999,
 ];
 
 const BOOT_LINES = [
@@ -199,8 +199,8 @@ function getLevelProgress(xp) {
 }
 
 function getSystemTheme(level) {
-  if (level >= 16) return 'god';
-  if (level >= 6)  return 'neon';
+  if (level >= 25) return 'god';
+  if (level >= 12)  return 'neon';
   return 'dim';
 }
 
