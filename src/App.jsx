@@ -117,14 +117,11 @@ const INTEGRITY_IDLE_THRESHOLD_MS = 60 * 60 * 1000;
 const INTEGRITY_DECAY_AMOUNT      = 15;
 const INTEGRITY_RESTORE_AMOUNT    = 20;
 
-// Power Hour: 90 minutes of 2x XP
 const POWER_HOUR_DURATION_MS = 90 * 60 * 1000;
 const POWER_HOUR_MULTIPLIER  = 2;
 
-// Entertainment: 1 PYQ = 2 earned minutes
 const LEISURE_MINUTES_PER_PYQ = 2;
 
-// Micro-Mission: 2 PYQs in 10 minutes
 const MICRO_MISSION_TARGET_PYQS    = 2;
 const MICRO_MISSION_DURATION_SECS  = 10 * 60;
 
@@ -147,7 +144,7 @@ const SUBJECT_PRINT_COLORS = {
 };
 
 const RANK_THRESHOLDS = [
-  { rank: 'CADET',       min: 0,     max: 5000   },
+  { rank: 'CADET',       min: 0,      max: 5000   },
   { rank: 'RECRUIT',     min: 5000,   max: 12000  },
   { rank: 'SPECIALIST',  min: 12000,  max: 25000  },
   { rank: 'OPERATIVE',   min: 25000,  max: 45000  },
@@ -169,7 +166,6 @@ const LEVEL_THRESHOLDS = [
   167000, 194000, 224000, 257000, 999999,
 ];
 
-// Boot sequence lines
 const BOOT_LINES = [
   'System waking...',
   'Neural Link Syncing...',
@@ -195,7 +191,7 @@ function getUserLevel(xp) {
 }
 
 function getLevelProgress(xp) {
-  const level           = getUserLevel(xp);
+  const level            = getUserLevel(xp);
   const currentThreshold = LEVEL_THRESHOLDS[level - 1] || 0;
   const nextThreshold    = LEVEL_THRESHOLDS[level]     || LEVEL_THRESHOLDS[LEVEL_THRESHOLDS.length - 1];
   const progress = ((xp - currentThreshold) / Math.max(nextThreshold - currentThreshold, 1)) * 100;
@@ -208,14 +204,8 @@ function getSystemTheme(level) {
   return 'dim';
 }
 
-/**
- * Returns an ISO date string "YYYY-MM-DD" for the current "game day".
- * A game day starts at 06:00 AM and ends at 05:59:59 AM the next calendar day.
- * So 2 AM → still the previous game day. 6 AM → new game day.
- */
 function getGameDay() {
   const now = new Date();
-  // If before 6 AM, the game day is "yesterday"
   if (now.getHours() < 6) {
     const yesterday = new Date(now);
     yesterday.setDate(yesterday.getDate() - 1);
@@ -224,10 +214,6 @@ function getGameDay() {
   return now.toISOString().slice(0, 10);
 }
 
-/**
- * Returns true if `lastLoginEpoch` belongs to a different game day than now.
- * Handles the 6 AM boundary correctly.
- */
 function isNewGameDay(lastLoginEpoch) {
   if (!lastLoginEpoch) return true;
   const lastGameDay = (() => {
@@ -242,10 +228,6 @@ function isNewGameDay(lastLoginEpoch) {
   return lastGameDay !== getGameDay();
 }
 
-/**
- * Returns true if the Power Hour window is still active.
- * powerHourEnd is an epoch ms timestamp.
- */
 function isPowerHourActive(powerHourEnd) {
   if (!powerHourEnd) return false;
   return Date.now() < powerHourEnd;
@@ -337,7 +319,6 @@ function playBootSound() {
       osc.start(ctx.currentTime + t);
       osc.stop(ctx.currentTime + t + dur);
     };
-    // Dramatic ascending boot tones
     note(110, 0, 0.3, 'sine');
     note(220, 0.3, 0.3, 'sine');
     note(440, 0.6, 0.3, 'sine');
@@ -437,10 +418,9 @@ function useVelocityCombo(missionId) {
   return { comboLevel, solvedCount, currentMultiplier, incrementSolved, comboExpired };
 }
 
-// ─── useGlitchType: produces a character-by-character typewriter/glitch effect ──
 function useGlitchType(targetText, speed = 40, startDelay = 0) {
-  const [displayed, setDisplayed]   = useState('');
-  const [isDone,    setIsDone]      = useState(false);
+  const [displayed, setDisplayed] = useState('');
+  const [isDone,    setIsDone]    = useState(false);
   const GLITCH_CHARS = '░▒▓█▄▌▐▀ⅠⅡⅢ▲▼◆◇';
 
   useEffect(() => {
@@ -453,11 +433,9 @@ function useGlitchType(targetText, speed = 40, startDelay = 0) {
     let revealTimer;
 
     startTimer = setTimeout(() => {
-      // Phase 1: rapid glitch characters
       glitchTimer = setInterval(() => {
         const rand = GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)];
-        setDisplayed((prev) => {
-          // Build a string of glitch chars up to current reveal length + some extra
+        setDisplayed(() => {
           const glitchLen = Math.min(idx + 3, targetText.length);
           return targetText.slice(0, idx) + Array.from({ length: glitchLen - idx }, () =>
             GLITCH_CHARS[Math.floor(Math.random() * GLITCH_CHARS.length)]
@@ -466,7 +444,6 @@ function useGlitchType(targetText, speed = 40, startDelay = 0) {
         glitchIdx++;
         if (glitchIdx > 4) {
           clearInterval(glitchTimer);
-          // Phase 2: reveal characters one by one
           revealTimer = setInterval(() => {
             if (idx < targetText.length) {
               idx++;
@@ -494,7 +471,6 @@ function useGlitchType(targetText, speed = 40, startDelay = 0) {
 // SECTION 4 — SMALL / STATELESS UI COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-// ── BootLine: Single animated boot text line ────────────────────────────────
 function BootLine({ text, startDelay, onDone, isLast }) {
   const { displayed, isDone } = useGlitchType(text, 35, startDelay);
 
@@ -523,20 +499,15 @@ function BootLine({ text, startDelay, onDone, isLast }) {
   );
 }
 
-// ── BootSequence: Full-screen cinematic intro ───────────────────────────────
 function BootSequence({ onInitialize }) {
-  const [linesDone,     setLinesDone]     = useState(0);
   const [showButton,    setShowButton]    = useState(false);
   const [shatterActive, setShatterActive] = useState(false);
   const [shatterDone,   setShatterDone]   = useState(false);
 
-  // Each line's start delay (ms): stagger them after the previous finishes
-  // Line 0: 400ms, Line 1: ~1600ms, Line 2: ~3200ms
-  const LINE_DELAYS = [400, 1800, 3600];
-  const LINE_DURATIONS = [1000, 1100, 1200]; // approx typing time
+  const LINE_DELAYS    = [400, 1800, 3600];
+  const LINE_DURATIONS = [1000, 1100, 1200];
 
   useEffect(() => {
-    // Show button after all 3 lines are done (add extra buffer)
     const timer = setTimeout(() => setShowButton(true), LINE_DELAYS[2] + LINE_DURATIONS[2] + 400);
     return () => clearTimeout(timer);
   }, []);
@@ -547,7 +518,6 @@ function BootSequence({ onInitialize }) {
 
   const handleInitialize = () => {
     setShatterActive(true);
-    // After shatter animation, call onInitialize
     setTimeout(() => {
       setShatterDone(true);
       setTimeout(onInitialize, 400);
@@ -563,17 +533,12 @@ function BootSequence({ onInitialize }) {
       animate={shatterActive ? { opacity: 0, scale: 1.06 } : { opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* Scanline overlay */}
       <div className="absolute inset-0 pointer-events-none" style={{
         backgroundImage: 'repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.03) 2px, rgba(0,255,65,0.03) 4px)',
       }} />
-
-      {/* CRT vignette */}
       <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.7) 100%)',
       }} />
-
-      {/* Top-left corner decoration */}
       <div className="absolute top-8 left-8 font-mono text-green-900" style={{ fontSize: 10, letterSpacing: '0.2em' }}>
         MHT-CET NEXUS v4.0 // NEURAL OS
       </div>
@@ -581,9 +546,7 @@ function BootSequence({ onInitialize }) {
         {new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
       </div>
 
-      {/* Main content */}
       <div className="relative z-10 w-full max-w-2xl px-8">
-        {/* Logo */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -599,14 +562,12 @@ function BootSequence({ onInitialize }) {
           </div>
         </motion.div>
 
-        {/* Boot lines */}
         <div className="space-y-4 mb-12">
           <BootLine text={BOOT_LINES[0]} startDelay={LINE_DELAYS[0]} isLast={false} />
           <BootLine text={BOOT_LINES[1]} startDelay={LINE_DELAYS[1]} isLast={false} />
           <BootLine text={BOOT_LINES[2]} startDelay={LINE_DELAYS[2]} isLast={true}  />
         </div>
 
-        {/* Initialize button */}
         <AnimatePresence>
           {showButton && !shatterActive && (
             <motion.div
@@ -640,7 +601,6 @@ function BootSequence({ onInitialize }) {
           )}
         </AnimatePresence>
 
-        {/* Progress bar at bottom */}
         <motion.div className="mt-16">
           <div className="font-mono text-green-900 text-center mb-2" style={{ fontSize: 9, letterSpacing: '0.3em' }}>
             NEURAL OS LOADING
@@ -660,7 +620,6 @@ function BootSequence({ onInitialize }) {
   );
 }
 
-// ── PowerHourBanner ─────────────────────────────────────────────────────────
 function PowerHourBanner({ powerHourEnd }) {
   const [secsLeft, setSecsLeft] = useState(() => getPowerHourSecondsLeft(powerHourEnd));
 
@@ -712,14 +671,12 @@ function PowerHourBanner({ powerHourEnd }) {
   );
 }
 
-// ── EntertainmentClearance ──────────────────────────────────────────────────
 function EntertainmentClearance({ dailyPyqsSolved, onRedeem }) {
-  const totalEarned  = dailyPyqsSolved * LEISURE_MINUTES_PER_PYQ;
-  const [redeemed,   setRedeemed]   = useState(() => LS.get('daily_leisure_redeemed', 0));
-  const [draining,   setDraining]   = useState(false);
+  const totalEarned = dailyPyqsSolved * LEISURE_MINUTES_PER_PYQ;
+  const [redeemed,  setRedeemed] = useState(() => LS.get('daily_leisure_redeemed', 0));
+  const [draining,  setDraining] = useState(false);
   const available = Math.max(0, totalEarned - redeemed);
 
-  // Sync redeemed to LS
   useEffect(() => {
     LS.set('daily_leisure_redeemed', redeemed);
   }, [redeemed]);
@@ -752,7 +709,6 @@ function EntertainmentClearance({ dailyPyqsSolved, onRedeem }) {
           1 PYQ = {LEISURE_MINUTES_PER_PYQ} MIN
         </div>
       </div>
-
       <div className="flex items-center gap-3 mb-3">
         <div className="flex-1">
           <div className="flex justify-between mb-1">
@@ -790,7 +746,6 @@ function EntertainmentClearance({ dailyPyqsSolved, onRedeem }) {
           {draining ? '▓▒░ DRAINING...' : available > 0 ? '▶ REDEEM LEISURE' : 'NONE EARNED'}
         </motion.button>
       </div>
-
       {redeemed > 0 && (
         <div className="font-mono text-xs text-center" style={{ color: 'rgba(100,60,150,0.6)', fontSize: 9 }}>
           {redeemed} MIN REDEEMED TODAY — GUILT-FREE MODE ACTIVATED ✓
@@ -800,13 +755,12 @@ function EntertainmentClearance({ dailyPyqsSolved, onRedeem }) {
   );
 }
 
-// ── MicroMissionModal ───────────────────────────────────────────────────────
 function MicroMissionModal({ onComplete, onAbort }) {
-  const [pyqsDone,     setPyqsDone]     = useState(0);
-  const [secsLeft,     setSecsLeft]     = useState(MICRO_MISSION_DURATION_SECS);
-  const [isRunning,    setIsRunning]    = useState(false);
-  const [isComplete,   setIsComplete]   = useState(false);
-  const [isFailed,     setIsFailed]     = useState(false);
+  const [pyqsDone,   setPyqsDone]   = useState(0);
+  const [secsLeft,   setSecsLeft]   = useState(MICRO_MISSION_DURATION_SECS);
+  const [isRunning,  setIsRunning]  = useState(false);
+  const [isComplete, setIsComplete] = useState(false);
+  const [isFailed,   setIsFailed]   = useState(false);
   const tickRef = useRef(null);
 
   const start = () => setIsRunning(true);
@@ -876,13 +830,9 @@ function MicroMissionModal({ onComplete, onAbort }) {
             <div className="font-mono text-xs text-gray-600 mb-6">
               Solve exactly {MICRO_MISSION_TARGET_PYQS} PYQs within {MICRO_MISSION_DURATION_SECS / 60} minutes.
             </div>
-
-            {/* Timer */}
             <div className="font-mono text-5xl font-black mb-2" style={{ color: secsLeft < 60 ? '#ff0000' : '#ff6b00', textShadow: `0 0 20px ${secsLeft < 60 ? '#ff0000' : '#ff6b00'}` }}>
               {mins}:{secs}
             </div>
-
-            {/* PYQ progress */}
             <div className="mb-5">
               <div className="h-3 mx-auto w-48 rounded-full overflow-hidden mb-2" style={{ background: '#1a0020' }}>
                 <motion.div className="h-full rounded-full"
@@ -894,7 +844,6 @@ function MicroMissionModal({ onComplete, onAbort }) {
                 {pyqsDone} / {MICRO_MISSION_TARGET_PYQS} PYQs SOLVED
               </div>
             </div>
-
             {!isRunning ? (
               <motion.button whileTap={{ scale: 0.95 }} onClick={start}
                 className="w-full py-3 font-mono text-sm font-black tracking-widest"
@@ -949,7 +898,6 @@ function MicroMissionModal({ onComplete, onAbort }) {
   );
 }
 
-// ── XPFloatAnimation ────────────────────────────────────────────────────────
 function XPFloatAnimation({ xpAmount, hasVelocityBonus, isPowerHour, onAnimationDone, theme }) {
   const goldMode = theme === 'god';
   return (
@@ -964,7 +912,7 @@ function XPFloatAnimation({ xpAmount, hasVelocityBonus, isPowerHour, onAnimation
         fontFamily: 'monospace',
         color:      goldMode ? '#ffd700' : (hasVelocityBonus ? '#ffff00' : '#00ff41'),
         textShadow: `0 0 20px ${goldMode ? '#ffd700' : (hasVelocityBonus ? '#ffff00' : '#00ff41')}`,
-        fontSize:   36, fontWeight: 900,
+        fontSize: 36, fontWeight: 900,
       }}>+{xpAmount} XP</div>
       {hasVelocityBonus && (
         <div style={{ fontFamily: 'monospace', color: '#ff6b00', textShadow: '0 0 15px #ff6b00', fontSize: 18, fontWeight: 700 }}>
@@ -985,39 +933,185 @@ function XPFloatAnimation({ xpAmount, hasVelocityBonus, isPowerHour, onAnimation
   );
 }
 
-// ── RevisionCard ────────────────────────────────────────────────────────────
-function RevisionCard({ revisionEntry }) {
-  const daysLeft   = Math.ceil((revisionEntry.dueDate - Date.now()) / 86400000);
-  const isOverdue  = daysLeft < 0;
-  const isDueToday = daysLeft <= 0;
+// ── MemoryNode — REPLACES old RevisionCard ──────────────────────────────────
+function MemoryNode({ node, onCheck }) {
+  const MILESTONES = [
+    { key: 'd1', label: '1-DAY', days: 1, prevKey: null },
+    { key: 'd3', label: '3-DAY', days: 3, prevKey: 'd1' },
+    { key: 'd7', label: '7-DAY', days: 7, prevKey: 'd3' },
+  ];
+
+  const checkedCount  = MILESTONES.filter((m) => node.milestones[m.key]).length;
+  const hasAnyChecked = checkedCount > 0;
+  const sc            = SUBJECT_CONFIG[node.subject] || {};
+  const SubIcon       = sc.icon || BookOpen;
+  const daysSince     = Math.floor((Date.now() - node.completedAt) / 86400000);
+
   return (
     <motion.div
-      initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-      className="p-3"
-      style={{ background: 'rgba(255,255,0,0.05)', border: `1px solid ${isDueToday || isOverdue ? '#ffff0040' : '#2a3f5a40'}`, borderRadius: 4 }}
+      layout
+      initial={{ opacity: 0, y: 12, scale: 0.96 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{
+        opacity: 0, scale: 1.06, y: -16,
+        boxShadow: '0 0 60px rgba(255,215,0,0.8)',
+        transition: { duration: 0.4, ease: 'easeOut' },
+      }}
+      className="relative overflow-hidden"
+      style={{
+        background: hasAnyChecked
+          ? 'linear-gradient(135deg, rgba(10,20,10,0.95), rgba(5,12,5,0.95))'
+          : 'linear-gradient(135deg, rgba(12,10,5,0.95), rgba(8,6,3,0.95))',
+        border: `1px solid ${hasAnyChecked ? 'rgba(0,255,65,0.25)' : 'rgba(255,215,0,0.2)'}`,
+        boxShadow: hasAnyChecked
+          ? '0 0 12px rgba(0,255,65,0.08)'
+          : '0 0 8px rgba(255,215,0,0.05)',
+      }}
     >
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="font-mono text-yellow-400" style={{ fontSize: 10 }}>⟳ MEMORY NODE</div>
-          <div className="text-white font-semibold text-sm truncate" style={{ maxWidth: 160 }}>{revisionEntry.chapterName}</div>
-          <div className="font-mono text-gray-500" style={{ fontSize: 10 }}>{revisionEntry.subject}</div>
+      {/* Processing pulse */}
+      {hasAnyChecked && checkedCount < 3 && (
+        <motion.div
+          className="absolute inset-0 pointer-events-none"
+          animate={{ opacity: [0.03, 0.09, 0.03] }}
+          transition={{ repeat: Infinity, duration: 2.2 }}
+          style={{ background: 'radial-gradient(ellipse at 50% 0%, rgba(0,245,255,0.3), transparent 70%)' }}
+        />
+      )}
+
+      <div className="p-3 pb-2">
+        {/* Header */}
+        <div className="flex items-start justify-between mb-2.5">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {hasAnyChecked ? (
+                <motion.span
+                  animate={{ opacity: [1, 0.5, 1] }}
+                  transition={{ repeat: Infinity, duration: 1.8 }}
+                  className="font-mono"
+                  style={{ color: '#00f5ff', fontSize: 8, letterSpacing: '0.15em' }}
+                >⟳ PROCESSING</motion.span>
+              ) : (
+                <span className="font-mono" style={{ color: 'rgba(255,215,0,0.5)', fontSize: 8, letterSpacing: '0.15em' }}>⬡ MEMORY NODE</span>
+              )}
+            </div>
+            <div className="font-bold text-sm text-white leading-tight truncate pr-2">{node.chapterName}</div>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              <SubIcon size={9} style={{ color: sc.color }} />
+              <span className="font-mono" style={{ color: sc.color, fontSize: 8 }}>{node.subject}</span>
+              <span className="font-mono text-gray-700" style={{ fontSize: 8 }}>• Day {daysSince}</span>
+            </div>
+          </div>
+
+          {/* Pip cluster */}
+          <div className="flex gap-1 items-center mt-0.5 flex-shrink-0">
+            {MILESTONES.map(({ key }) => (
+              <div key={key} style={{
+                width: 6, height: 6, borderRadius: '50%',
+                background: node.milestones[key] ? '#00ff41' : 'rgba(60,80,60,0.4)',
+                boxShadow: node.milestones[key] ? '0 0 5px #00ff41' : 'none',
+                transition: 'all 0.3s',
+              }} />
+            ))}
+          </div>
         </div>
-        <div className="text-right">
-          {isOverdue ? (
-            <div className="font-mono text-red-400 text-xs">OVERDUE!</div>
-          ) : isDueToday ? (
-            <motion.div animate={{ opacity: [1, 0.4, 1] }} transition={{ repeat: Infinity, duration: 1 }} className="font-mono text-yellow-400 text-xs">TODAY!</motion.div>
-          ) : (
-            <div className="font-mono text-gray-500 text-xs">+{daysLeft}d</div>
-          )}
-          <div className="font-mono text-gray-600" style={{ fontSize: 9 }}>Rev #{revisionEntry.revNum}</div>
+
+        {/* Milestone buttons */}
+        <div className="flex gap-1.5">
+          {MILESTONES.map(({ key, label, days, prevKey }) => {
+            const isChecked  = !!node.milestones[key];
+            const isUnlocked = !prevKey || !!node.milestones[prevKey];
+            const dueDate    = node.completedAt + days * 86400000;
+            const isOverdue  = !isChecked && Date.now() > dueDate && isUnlocked;
+            const isDueToday = !isChecked && isUnlocked && !isOverdue &&
+                               Math.abs(Date.now() - dueDate) < 86400000;
+
+            const borderCol = isChecked  ? 'rgba(0,255,65,0.55)'
+                            : isOverdue  ? 'rgba(255,60,0,0.55)'
+                            : isDueToday ? 'rgba(255,215,0,0.55)'
+                            : isUnlocked ? 'rgba(0,245,255,0.2)'
+                            : 'rgba(30,45,60,0.4)';
+            const bgCol     = isChecked  ? 'rgba(0,255,65,0.1)'
+                            : isOverdue  ? 'rgba(255,60,0,0.07)'
+                            : isDueToday ? 'rgba(255,215,0,0.07)'
+                            : 'rgba(0,0,0,0.2)';
+            const textCol   = isChecked  ? '#00ff41'
+                            : isOverdue  ? '#ff6644'
+                            : isDueToday ? '#ffd700'
+                            : isUnlocked ? '#4a8899'
+                            : '#2a3f50';
+
+            return (
+              <motion.button
+                key={key}
+                onClick={() => !isChecked && isUnlocked && onCheck(node.id, key)}
+                disabled={isChecked || !isUnlocked}
+                whileHover={!isChecked && isUnlocked ? { scale: 1.04 } : {}}
+                whileTap={!isChecked && isUnlocked ? { scale: 0.88 } : {}}
+                className="flex-1 flex flex-col items-center gap-1 py-2 transition-all"
+                style={{
+                  background: bgCol,
+                  border: `1px solid ${borderCol}`,
+                  cursor: isChecked || !isUnlocked ? 'not-allowed' : 'pointer',
+                  opacity: !isUnlocked ? 0.4 : 1,
+                }}
+              >
+                <AnimatePresence mode="wait">
+                  {isChecked ? (
+                    <motion.div
+                      key="checked"
+                      initial={{ scale: 0, rotate: -120 }}
+                      animate={{ scale: 1, rotate: 0 }}
+                      transition={{ type: 'spring', stiffness: 400, damping: 14 }}
+                    >
+                      <CheckCircle size={13} color="#00ff41" style={{ filter: 'drop-shadow(0 0 4px #00ff41)' }} />
+                    </motion.div>
+                  ) : (
+                    <motion.div
+                      key="unchecked"
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                      style={{
+                        width: 13, height: 13,
+                        border: `1.5px solid ${borderCol}`,
+                        borderRadius: '50%',
+                        background: isOverdue || isDueToday ? `${borderCol}18` : 'transparent',
+                      }}
+                    />
+                  )}
+                </AnimatePresence>
+
+                <span className="font-mono font-black" style={{ color: textCol, fontSize: 7, letterSpacing: '0.05em' }}>
+                  {label}
+                </span>
+                {isOverdue && !isChecked && (
+                  <motion.span
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ repeat: Infinity, duration: 0.9 }}
+                    className="font-mono"
+                    style={{ color: '#ff4444', fontSize: 6 }}
+                  >LATE</motion.span>
+                )}
+                {isDueToday && (
+                  <motion.span
+                    animate={{ opacity: [1, 0.4, 1] }}
+                    transition={{ repeat: Infinity, duration: 1.1 }}
+                    className="font-mono"
+                    style={{ color: '#ffd700', fontSize: 6 }}
+                  >TODAY</motion.span>
+                )}
+                {!isUnlocked && (
+                  <span className="font-mono" style={{ color: '#2a3f50', fontSize: 6 }}>🔒</span>
+                )}
+              </motion.button>
+            );
+          })}
         </div>
       </div>
     </motion.div>
   );
 }
 
-// ── SystemIntegrityBar ──────────────────────────────────────────────────────
 function SystemIntegrityBar({ integrity }) {
   const color =
     integrity >= 75 ? '#00ff41' :
@@ -1054,7 +1148,6 @@ function SystemIntegrityBar({ integrity }) {
 // SECTION 5 — COMPLEX COMPONENTS
 // ═══════════════════════════════════════════════════════════════════
 
-// ── AvatarStatsCard ─────────────────────────────────────────────────────────
 function AvatarStatsCard({ stats, totalXP, theme }) {
   const level   = getUserLevel(totalXP);
   const lvlProg = getLevelProgress(totalXP);
@@ -1187,7 +1280,6 @@ function AvatarStatsCard({ stats, totalXP, theme }) {
   );
 }
 
-// ── EpisodeCard ─────────────────────────────────────────────────────────────
 function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, deployedNames }) {
   const episodeChapterKeys = episode.chapters.map(c => `${c.subject}::${c.name}`);
   const completedInEpisode = episodeChapterKeys.filter(k => completedChapters.includes(k)).length;
@@ -1249,7 +1341,7 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
 
       <div className="px-3 py-2 space-y-1">
         {episode.chapters.map((ch, idx) => {
-          const key        = `${ch.subject}::${ch.name}`;
+          const key         = `${ch.subject}::${ch.name}`;
           const isCompleted = completedChapters.includes(key);
           const isDeployed  = deployedNames.some(d => d.subject === ch.subject && d.name === ch.name);
           const sc          = SUBJECT_CONFIG[ch.subject];
@@ -1289,7 +1381,6 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
   );
 }
 
-// ── VigilanceOverlay ─────────────────────────────────────────────────────────
 function VigilanceOverlay({ countdown, onResync }) {
   const isUrgent = countdown < 20;
   return (
@@ -1323,7 +1414,6 @@ function VigilanceOverlay({ countdown, onResync }) {
   );
 }
 
-// ── LiveTimeDisplay ──────────────────────────────────────────────────────────
 function LiveTimeDisplay({ taskId, isRunning, sessionStartRef }) {
   const [displaySeconds, setDisplaySeconds] = useState(0);
   useEffect(() => {
@@ -1346,7 +1436,6 @@ function LiveTimeDisplay({ taskId, isRunning, sessionStartRef }) {
   );
 }
 
-// ── TimerModal ───────────────────────────────────────────────────────────────
 function TimerModal({
   task, onClose,
   timerSecondsLeft, timerTotalSeconds, timerIsRunning, timerIsBreak, timerCompletedSessions,
@@ -1545,7 +1634,6 @@ function TimerModal({
   );
 }
 
-// ── MissionCard ──────────────────────────────────────────────────────────────
 function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer, timerIsRunning, onActivateOverride }) {
   const diffConfig    = DIFF_CONFIG[task.diff];
   const subjectConfig = SUBJECT_CONFIG[task.subject] || {};
@@ -1675,7 +1763,6 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
           </button>
         </div>
 
-        {/* Friction Reducer button */}
         {!task.isMicro && (
           <motion.button
             whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.97 }}
@@ -1698,7 +1785,6 @@ function MissionCard({ task, onAnnihilate, onOpenTimer, onDelete, isActiveTimer,
   );
 }
 
-// ── WarArchiveModal ──────────────────────────────────────────────────────────
 function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }) {
   const totalPyqsSolved = archives.reduce((s, e) => s + (e.finalPyqCount    || 0), 0);
   const totalMinutes    = archives.reduce((s, e) => s + (e.timeSpentMinutes || 0), 0);
@@ -1777,11 +1863,27 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
                 {archives.map((entry, idx) => (
                   <motion.tr key={entry.id} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.03 }} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
                     <td className="py-2 px-2 font-mono text-gray-700" style={{ fontSize: 10 }}>{archives.length - idx}</td>
+
+                    {/* ── UPDATED: shows HARDENED badge for revision nodes ── */}
                     <td className="py-2 px-2">
-                      <div className="text-white font-semibold" style={{ fontSize: 13 }}>{entry.chapterName}</div>
+                      <div className="text-white font-semibold" style={{ fontSize: 13 }}>
+                        {entry.chapterName}
+                        {entry.isRevisionNode && (
+                          <span className="ml-2 font-mono px-1 py-0.5"
+                            style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', color: '#ffd700', fontSize: 7, verticalAlign: 'middle' }}>
+                            HARDENED
+                          </span>
+                        )}
+                      </div>
                       {entry.hadVelocityBonus && <div className="font-mono text-yellow-500" style={{ fontSize: 8 }}>⚡ VELOCITY BONUS</div>}
-                      {entry.hadPowerHour && <div className="font-mono text-orange-400" style={{ fontSize: 8 }}>⚡ POWER HOUR 2×</div>}
+                      {entry.hadPowerHour     && <div className="font-mono text-orange-400" style={{ fontSize: 8 }}>⚡ POWER HOUR 2×</div>}
+                      {entry.isRevisionNode   && (
+                        <div className="font-mono" style={{ color: 'rgba(0,255,65,0.5)', fontSize: 8 }}>
+                          ⟳ SPACED REVISION COMPLETE
+                        </div>
+                      )}
                     </td>
+
                     <td className="py-2 px-2 font-mono" style={{ color: SUBJECT_PRINT_COLORS[entry.subject] || '#aaa', fontSize: 10 }}>{entry.subject}</td>
                     <td className="py-2 px-2">
                       <span className="font-mono px-1.5 py-0.5" style={{ color: DIFF_CONFIG[entry.difficulty]?.color || '#aaa', border: `1px solid ${DIFF_CONFIG[entry.difficulty]?.color || '#aaa'}50`, background: `${DIFF_CONFIG[entry.difficulty]?.color || '#aaa'}10`, fontSize: 9 }}>
@@ -1817,42 +1919,34 @@ export default function App() {
   const [appReady,    setAppReady]    = useState(false);
   const [bootChecked, setBootChecked] = useState(false);
 
-  // On mount: check if boot sequence should show
   useEffect(() => {
     const lastLogin = LS.get('last_login_epoch', null);
     const needsBoot = isNewGameDay(lastLogin);
-
     if (needsBoot) {
       setShowBoot(true);
     } else {
       setAppReady(true);
     }
     setBootChecked(true);
-
-    // Always record this visit so we don't boot again until next game day
     LS.set('last_login_epoch', Date.now());
   }, []);
 
   // ── RPG STATS STATE ───────────────────────────────────────────────────────────
-  const [totalXP,   setTotalXP]   = useState(() => LS.get('total_xp', 0));
-  const [rpgStats,  setRpgStats]  = useState(() => LS.get('rpg_stats', { strength: 0, dexterity: 0, intelligence: 0 }));
+  const [totalXP,  setTotalXP]  = useState(() => LS.get('total_xp', 0));
+  const [rpgStats, setRpgStats] = useState(() => LS.get('rpg_stats', { strength: 0, dexterity: 0, intelligence: 0 }));
 
   const userLevel   = getUserLevel(totalXP);
   const systemTheme = getSystemTheme(userLevel);
 
   // ── POWER HOUR STATE ──────────────────────────────────────────────────────────
-  // powerHourEnd is an epoch ms timestamp; null if not active
   const [powerHourEnd, setPowerHourEnd] = useState(() => {
     const saved = LS.get('power_hour_end', null);
-    // Validate it's still in the future and on this game day
     if (saved && isPowerHourActive(saved)) return saved;
     return null;
   });
-
   const isInPowerHour = isPowerHourActive(powerHourEnd);
 
   // ── ENTERTAINMENT / DAILY PYQs ─────────────────────────────────────────────
-  // dailyPyqsSolved resets on a new game day
   const [dailyPyqsSolved, setDailyPyqsSolved] = useState(() => {
     const savedDay  = LS.get('daily_pyq_day',    null);
     const savedPyqs = LS.get('daily_pyqs_solved', 0);
@@ -1868,15 +1962,43 @@ export default function App() {
   // ── CORE APP STATE ────────────────────────────────────────────────────────────
   const [completedChapters, setCompletedChapters] = useState(() => LS.get('completed_chapters', []));
   const [missions,          setMissions]          = useState(() => LS.get('missions', []));
-  const [revisions,         setRevisions]         = useState(() => LS.get('revisions', []));
-  const [warArchives,       setWarArchives]        = useState(() => LS.get('WAR_ARCHIVES', []));
-  const [vigilanceMode,     setVigilanceMode]      = useState(() => LS.get('vigilance_mode', false));
+
+  // ── REVISIONS — NEW FORMAT with backward-compat migration ────────────────────
+  const [revisions, setRevisions] = useState(() => {
+    const saved = LS.get('revisions', []);
+    if (!saved.length) return [];
+
+    // Old format has 'dueDate' & 'revNum'. New format has 'milestones' object.
+    const isOldFormat = saved.some((r) => 'dueDate' in r && !('milestones' in r));
+    if (!isOldFormat) return saved; // already new format
+
+    // Group old entries by "subject::chapterName" into single nodes
+    const grouped = {};
+    saved.forEach((r) => {
+      const key = `${r.subject}::${r.chapterName}`;
+      if (!grouped[key]) {
+        grouped[key] = {
+          id:          `migrated_${key}_${Date.now()}`,
+          chapterName: r.chapterName,
+          subject:     r.subject,
+          completedAt: Date.now() - 8 * 86400000, // assume ~8 days ago
+          milestones:  { d1: null, d3: null, d7: null },
+        };
+      }
+      const milestoneKey = r.revNum === 1 ? 'd1' : r.revNum === 2 ? 'd3' : r.revNum === 3 ? 'd7' : null;
+      if (milestoneKey && r.done) grouped[key].milestones[milestoneKey] = Date.now();
+    });
+    return Object.values(grouped);
+  });
+
+  const [warArchives,   setWarArchives]   = useState(() => LS.get('WAR_ARCHIVES', []));
+  const [vigilanceMode, setVigilanceMode] = useState(() => LS.get('vigilance_mode', false));
 
   // ── MICRO-MISSION STATE ───────────────────────────────────────────────────────
   const [showMicroMission,     setShowMicroMission]     = useState(false);
   const [microMissionParentId, setMicroMissionParentId] = useState(null);
 
-  // ── TIMER STATE (top-level, persists across modal open/close) ─────────────────
+  // ── TIMER STATE ───────────────────────────────────────────────────────────────
   const [timerTaskId,            setTimerTaskId]            = useState(() => LS.get('ptimer_taskId', null));
   const [timerSecondsLeft,       setTimerSecondsLeft]       = useState(() => LS.get('ptimer_secondsLeft', POMODORO_WORK));
   const [timerTotalSeconds,      setTimerTotalSeconds]      = useState(() => LS.get('ptimer_totalSeconds', POMODORO_WORK));
@@ -1886,9 +2008,9 @@ export default function App() {
   const sessionStartEpochRef = useRef(null);
 
   // ── UI STATE ──────────────────────────────────────────────────────────────────
-  const [modalOpen,        setModalOpen]        = useState(false);
-  const [xpFloatData,      setXpFloatData]      = useState(null);
-  const [showArchiveModal, setShowArchiveModal]  = useState(false);
+  const [modalOpen,        setModalOpen]       = useState(false);
+  const [xpFloatData,      setXpFloatData]     = useState(null);
+  const [showArchiveModal, setShowArchiveModal] = useState(false);
 
   // ── MISSION BUILDER FORM ──────────────────────────────────────────────────────
   const [formSubject,  setFormSubject]  = useState('Physics');
@@ -1896,7 +2018,6 @@ export default function App() {
   const [formDiff,     setFormDiff]     = useState('M');
   const [formPyqCount, setFormPyqCount] = useState(0);
 
-  // Seed form on mount
   useEffect(() => {
     const first = SYLLABUS['Physics'].find((ch) => !completedChapters.includes(`Physics::${ch.name}`));
     if (first) { setFormChapter(first.name); setFormDiff(first.diff); }
@@ -1916,26 +2037,21 @@ export default function App() {
   useEffect(() => { LS.set('ptimer_isBreak',      timerIsBreak);      }, [timerIsBreak]);
   useEffect(() => { LS.set('ptimer_sessions',     timerCompletedSessions); }, [timerCompletedSessions]);
   useEffect(() => { LS.set('ptimer_taskId',       timerTaskId);       }, [timerTaskId]);
-  useEffect(() => {
-    LS.set('power_hour_end',    powerHourEnd);
-  }, [powerHourEnd]);
+  useEffect(() => { LS.set('power_hour_end',      powerHourEnd);      }, [powerHourEnd]);
   useEffect(() => {
     LS.set('daily_pyqs_solved', dailyPyqsSolved);
     LS.set('daily_pyq_day',     getGameDay());
   }, [dailyPyqsSolved]);
 
   // ── 6 AM DAILY RESET ──────────────────────────────────────────────────────────
-  // Check every minute if we've crossed 6 AM into a new game day while the app is open
   useEffect(() => {
     let lastKnownDay = getGameDay();
     const id = setInterval(() => {
       const currentDay = getGameDay();
       if (currentDay !== lastKnownDay) {
-        // New game day has begun — reset daily counters
         lastKnownDay = currentDay;
         setDailyPyqsSolved(0);
         LS.set('daily_leisure_redeemed', 0);
-        // Expire power hour if it rolled over (shouldn't, but guard)
         setPowerHourEnd((prev) => {
           if (prev && !isPowerHourActive(prev)) return null;
           return prev;
@@ -2056,19 +2172,15 @@ export default function App() {
   }, [timerTaskId, handleAbortTimer]);
 
   const handleCloseModal = useCallback(() => setModalOpen(false), []);
-
-  const activeTimerTask = missions.find((m) => m.id === timerTaskId) || null;
+  const activeTimerTask  = missions.find((m) => m.id === timerTaskId) || null;
 
   // ── BOOT INITIALIZE HANDLER ───────────────────────────────────────────────────
   const handleInitialize = useCallback(() => {
     setShowBoot(false);
     setAppReady(true);
-
-    // Start Power Hour
     const end = Date.now() + POWER_HOUR_DURATION_MS;
     setPowerHourEnd(end);
     LS.set('power_hour_end', end);
-
     firePowerHourConfetti();
     playNeuralSync();
   }, []);
@@ -2089,10 +2201,11 @@ export default function App() {
     100,
     ((totalXP - currentRank.min) / (Math.max(nextRank.min, currentRank.min + 1) - currentRank.min)) * 100
   );
-  const upcomingRevisions = revisions
-    .filter((r) => !r.done)
-    .sort((a, b) => a.dueDate - b.dueDate)
-    .slice(0, 6);
+
+  // ── NEW: activeMemoryNodes replaces upcomingRevisions ──────────────────────
+  // All nodes in state are active. Fully-hardened nodes are removed on d7 check.
+  // Sort oldest first so users see earliest completed chapters at top.
+  const activeMemoryNodes = [...revisions].sort((a, b) => a.completedAt - b.completedAt);
 
   const availableChapters = SYLLABUS[formSubject].filter(
     (ch) => !completedChapters.includes(`${formSubject}::${ch.name}`)
@@ -2103,7 +2216,6 @@ export default function App() {
 
   const deployedMissionRefs = missions.map(m => ({ subject: m.subject, name: m.name }));
 
-  // Print values
   const printGeneratedDate = new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }).toUpperCase();
   const printTotalPyqs  = warArchives.reduce((s, a) => s + (a.finalPyqCount    || 0), 0);
   const printTotalMins  = warArchives.reduce((s, a) => s + (a.timeSpentMinutes || 0), 0);
@@ -2152,7 +2264,6 @@ export default function App() {
     setMissions((prev) => [newMission, ...prev]);
   };
 
-  // Friction Reducer: activate micro-mission for a specific task
   const handleActivateOverride = useCallback((task) => {
     setMicroMissionParentId(task.id);
     setShowMicroMission(true);
@@ -2161,13 +2272,74 @@ export default function App() {
   const handleMicroMissionComplete = useCallback(() => {
     setShowMicroMission(false);
     setMicroMissionParentId(null);
-    // Credit 2 PYQs to daily count (the ones they just solved)
     setDailyPyqsSolved((prev) => prev + MICRO_MISSION_TARGET_PYQS);
   }, []);
 
   const handleMicroMissionAbort = useCallback(() => {
     setShowMicroMission(false);
     setMicroMissionParentId(null);
+  }, []);
+
+  // ── MEMORY NODE: CHECK MILESTONE ─────────────────────────────────────────────
+  const handleCheckMilestone = useCallback((nodeId, milestone) => {
+    const now = Date.now();
+
+    setRevisions((prev) => {
+      const node = prev.find((n) => n.id === nodeId);
+      if (!node) return prev;
+      // Guard: already checked
+      if (node.milestones[milestone]) return prev;
+      // Guard: sequential unlock — d3 requires d1, d7 requires d3
+      if (milestone === 'd3' && !node.milestones.d1) return prev;
+      if (milestone === 'd7' && !node.milestones.d3) return prev;
+
+      const newMilestones   = { ...node.milestones, [milestone]: now };
+      const isFullyHardened = newMilestones.d1 && newMilestones.d3 && newMilestones.d7;
+
+      if (isFullyHardened) {
+        // Archive the fully-hardened node
+        const archiveEntry = {
+          id:               `rev_hardened_${nodeId}`,
+          chapterName:      node.chapterName,
+          subject:          node.subject,
+          difficulty:       '—',
+          finalPyqCount:    0,
+          timeSpentMinutes: 0,
+          xpEarned:         75,
+          isRevisionNode:   true,
+          revisionDates: {
+            d1: newMilestones.d1,
+            d3: newMilestones.d3,
+            d7: now,
+          },
+          completedAt:   now,
+          completedDate: new Date(now).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+          completedTime: new Date(now).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
+        };
+        const existingArchives = LS.get('WAR_ARCHIVES', []);
+        const newArchives      = [archiveEntry, ...existingArchives];
+        LS.set('WAR_ARCHIVES', newArchives);
+
+        // Defer side-effects so exit animation plays first
+        setTimeout(() => {
+          setWarArchives(newArchives);
+          setTotalXP((xp) => {
+            const next = xp + 75;
+            LS.set('total_xp', next);
+            return next;
+          });
+          setXpFloatData({ xpAmount: 75, hasVelocityBonus: false, isPowerHour: false, id: Date.now() });
+          fireGodModeConfetti();
+          playNeuralSync();
+        }, 350);
+
+        // Remove node from active list
+        return prev.filter((n) => n.id !== nodeId);
+      }
+
+      // Otherwise just mark the milestone
+      return prev.map((n) => (n.id === nodeId ? { ...n, milestones: newMilestones } : n));
+    });
   }, []);
 
   // ── RPG: ANNIHILATE MISSION ───────────────────────────────────────────────────
@@ -2194,13 +2366,11 @@ export default function App() {
         setRpgStats((prev) => ({ ...prev, [statKey]: (prev[statKey] || 0) + xpEarned }));
       }
 
-      // Count PYQs solved for today's entertainment bar
       const pyqsSolved = LS.get(`solved_${task.id}`, 0);
       if (pyqsSolved > 0) {
         setDailyPyqsSolved((prev) => prev + pyqsSolved);
       }
 
-      // Archive entry
       const timeSpentSeconds = LS.get(`time_spent_${task.id}`, 0);
       const archiveEntry = {
         id: task.id, chapterName: task.name, subject: task.subject,
@@ -2215,14 +2385,16 @@ export default function App() {
       LS.set('WAR_ARCHIVES', [archiveEntry, ...existing]);
       setWarArchives((prev) => [archiveEntry, ...prev]);
 
-      // Spaced repetition schedule
+      // ── NEW: single memory node per chapter (replaces old 3-entry format) ──
       const nowMs = Date.now();
-      setRevisions((prev) => [
-        ...prev,
-        { id: `${task.id}_r1`, chapterName: task.name, subject: task.subject, dueDate: nowMs + 1 * 86400000, revNum: 1 },
-        { id: `${task.id}_r3`, chapterName: task.name, subject: task.subject, dueDate: nowMs + 3 * 86400000, revNum: 2 },
-        { id: `${task.id}_r7`, chapterName: task.name, subject: task.subject, dueDate: nowMs + 7 * 86400000, revNum: 3 },
-      ]);
+      const memoryNode = {
+        id:          `${task.id}_node`,
+        chapterName: task.name,
+        subject:     task.subject,
+        completedAt: nowMs,
+        milestones:  { d1: null, d3: null, d7: null },
+      };
+      setRevisions((prev) => [memoryNode, ...prev]);
     }
 
     if (timerTaskId === task.id) {
@@ -2271,18 +2443,15 @@ export default function App() {
     ? 'linear-gradient(180deg, #020508 0%, #030810 50%, #020508 100%)'
     : 'linear-gradient(180deg, #050508 0%, #080810 50%, #050508 100%)';
 
-  // Don't render app content until boot check is done
   if (!bootChecked) return null;
 
   // ── JSX ────────────────────────────────────────────────────────────────────────
   return (
     <>
-      {/* Boot Sequence — renders above everything */}
       <AnimatePresence>
         {showBoot && <BootSequence onInitialize={handleInitialize} />}
       </AnimatePresence>
 
-      {/* Main App — always mounted but invisible until boot is done */}
       <AnimatePresence>
         {appReady && (
           <motion.div
@@ -2358,7 +2527,7 @@ export default function App() {
                   {warArchives.map((entry, idx) => (
                     <tr key={entry.id}>
                       <td>{warArchives.length - idx}</td>
-                      <td>{entry.chapterName}{entry.hadVelocityBonus ? ' ⚡' : ''}{entry.hadPowerHour ? ' 2×' : ''}</td>
+                      <td>{entry.chapterName}{entry.hadVelocityBonus ? ' ⚡' : ''}{entry.hadPowerHour ? ' 2×' : ''}{entry.isRevisionNode ? ' [HARDENED]' : ''}</td>
                       <td>{entry.subject}</td>
                       <td>{DIFF_LABELS_PRINT[entry.difficulty] || entry.difficulty}</td>
                       <td style={{ textAlign: 'center' }}>{entry.finalPyqCount || 0}</td>
@@ -2424,7 +2593,7 @@ export default function App() {
               )}
             </AnimatePresence>
 
-            {/* Focus dimmer when timer is running and modal is closed */}
+            {/* Focus dimmer */}
             <AnimatePresence>
               {timerIsRunning && !modalOpen && (
                 <motion.div
@@ -2466,7 +2635,6 @@ export default function App() {
                   <div className="flex items-center gap-3 flex-wrap justify-end">
                     <SystemIntegrityBar integrity={systemIntegrity} />
 
-                    {/* Timer status chip */}
                     {timerTaskId && (
                       <motion.button
                         animate={timerIsRunning ? { boxShadow: ['0 0 6px #00ff41', '0 0 18px #00ff41', '0 0 6px #00ff41'] } : {}}
@@ -2485,7 +2653,6 @@ export default function App() {
                       </motion.button>
                     )}
 
-                    {/* Power Hour chip in header */}
                     {isInPowerHour && (
                       <motion.div
                         animate={{ opacity: [1, 0.7, 1] }}
@@ -2497,7 +2664,6 @@ export default function App() {
                       </motion.div>
                     )}
 
-                    {/* War Archives */}
                     <motion.button whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}
                       onClick={() => setShowArchiveModal(true)}
                       className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
@@ -2508,7 +2674,6 @@ export default function App() {
                       {warArchives.length > 0 && <span style={{ background: 'rgba(255,165,0,0.2)', color: '#ffa500', fontSize: 9, padding: '0 4px' }}>{warArchives.length}</span>}
                     </motion.button>
 
-                    {/* Vigilance toggle */}
                     <button onClick={() => setVigilanceMode((v) => !v)}
                       className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider transition-all"
                       style={{ background: vigilanceMode ? 'rgba(0,255,65,0.12)' : 'rgba(30,30,30,0.5)', border: `1px solid ${vigilanceMode ? '#00ff41' : '#2a3f2a'}`, color: vigilanceMode ? '#00ff41' : '#3a5a3a', fontSize: 10 }}
@@ -2536,7 +2701,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Loss Aversion warning banner */}
                 {systemIntegrity < 50 && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
@@ -2562,9 +2726,7 @@ export default function App() {
               {/* ══ ENTERTAINMENT CLEARANCE ══ */}
               <EntertainmentClearance
                 dailyPyqsSolved={dailyPyqsSolved}
-                onRedeem={(mins) => {
-                  // Could trigger a "Leisure Mode" visual in future
-                }}
+                onRedeem={(mins) => {}}
               />
 
               {/* ══ SECTION 1: MISSION BUILDER ══ */}
@@ -2578,7 +2740,6 @@ export default function App() {
                 <div className="p-5 mb-5" style={{ background: 'linear-gradient(135deg, #0a1628, #060d1a)', border: '1px solid rgba(0,245,255,0.2)' }}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
 
-                    {/* ① Subject */}
                     <div className="lg:col-span-1">
                       <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET SUBJECT</label>
                       <div className="relative">
@@ -2594,7 +2755,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* ② Chapter */}
                     <div className="lg:col-span-2">
                       <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
                         TARGET CHAPTER <span className="text-gray-700">({availableChapters.length} remaining)</span>
@@ -2623,7 +2783,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* ③ Difficulty */}
                     <div>
                       <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>
                         DIFFICULTY {formChapter && <span className="text-gray-700">(auto)</span>}
@@ -2643,7 +2802,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* ④ PYQ + Deploy */}
                     <div>
                       <label className="font-mono text-gray-500 block mb-1 tracking-wider" style={{ fontSize: 10 }}>TARGET PYQs</label>
                       <div className="flex gap-2">
@@ -2662,7 +2820,6 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Mission cards */}
                 <AnimatePresence mode="popLayout">
                   {missions.length === 0 ? (
                     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-12 border border-dashed" style={{ borderColor: '#1a2f4a' }}>
@@ -2744,17 +2901,51 @@ export default function App() {
                 </div>
               </section>
 
-              {/* ══ SECTION 2.5: MEMORY HACK NODES ══ */}
-              {upcomingRevisions.length > 0 && (
+              {/* ══ SECTION 2.5: MEMORY HACK NODES — UPDATED ══ */}
+              {activeMemoryNodes.length > 0 && (
                 <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
                   <div className="flex items-center gap-3 mb-4">
                     <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #ffff00, transparent)' }} />
-                    <span className="font-mono text-xs tracking-widest" style={{ color: '#ffff00', textShadow: '0 0 8px #ffff00' }}>◈ MEMORY HACK NODES</span>
+                    <div className="flex items-center gap-2">
+                      <motion.span
+                        animate={{ opacity: [1, 0.5, 1] }}
+                        transition={{ repeat: Infinity, duration: 2 }}
+                        className="font-mono text-xs tracking-widest"
+                        style={{ color: '#ffff00', textShadow: '0 0 8px #ffff00' }}
+                      >◈ MEMORY HACK NODES</motion.span>
+                      <span className="font-mono px-2 py-0.5"
+                        style={{ background: 'rgba(255,215,0,0.1)', border: '1px solid rgba(255,215,0,0.3)', color: '#ffd700', fontSize: 9 }}>
+                        {activeMemoryNodes.length}
+                      </span>
+                    </div>
                     <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #ffff00, transparent)' }} />
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                    {upcomingRevisions.map((rev) => <RevisionCard key={rev.id} revisionEntry={rev} />)}
+
+                  {/* Legend */}
+                  <div className="flex items-center gap-4 mb-3 px-1 flex-wrap">
+                    {[
+                      { color: '#00f5ff', label: 'UNLOCKED' },
+                      { color: '#ffd700', label: 'DUE TODAY' },
+                      { color: '#ff6644', label: 'OVERDUE'   },
+                      { color: '#00ff41', label: 'DONE'      },
+                    ].map(({ color, label }) => (
+                      <div key={label} className="flex items-center gap-1.5">
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: color, boxShadow: `0 0 4px ${color}` }} />
+                        <span className="font-mono" style={{ color: 'rgba(120,140,160,0.7)', fontSize: 8, letterSpacing: '0.1em' }}>{label}</span>
+                      </div>
+                    ))}
+                    <span className="font-mono ml-auto" style={{ color: 'rgba(80,100,120,0.6)', fontSize: 8 }}>
+                      7-DAY = AUTO-ARCHIVES (+75 XP)
+                    </span>
                   </div>
+
+                  <AnimatePresence mode="popLayout">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                      {activeMemoryNodes.map((node) => (
+                        <MemoryNode key={node.id} node={node} onCheck={handleCheckMilestone} />
+                      ))}
+                    </div>
+                  </AnimatePresence>
                 </section>
               )}
 
@@ -2788,7 +2979,6 @@ export default function App() {
                   })}
                 </div>
 
-                {/* Per-subject progress summary */}
                 <div className="mt-6 grid grid-cols-3 gap-3">
                   {Object.entries(SUBJECT_CONFIG).map(([subject, sc]) => {
                     const total     = SYLLABUS[subject].length;
