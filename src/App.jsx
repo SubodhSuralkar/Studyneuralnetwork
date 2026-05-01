@@ -2725,6 +2725,42 @@ export default function App() {
   // ── NEURAL ALARM REF ────────────────────────────────────────────
   const alarmRef = useRef(null);
 
+  // ── PWA INSTALL PROMPT ───────────────────────────────────────────
+  const [installPrompt,   setInstallPrompt]   = useState(null);
+  const [isAppInstalled,  setIsAppInstalled]  = useState(false);
+
+  useEffect(() => {
+    // Detect if already running as installed PWA.
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setIsAppInstalled(true);
+    }
+
+    const handleBeforeInstall = (e) => {
+      e.preventDefault();           // Block the default mini-infobar.
+      setInstallPrompt(e);          // Save the event for later.
+    };
+    const handleAppInstalled = () => {
+      setIsAppInstalled(true);
+      setInstallPrompt(null);
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled',        handleAppInstalled);
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled',        handleAppInstalled);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!installPrompt) return;
+    const { outcome } = await installPrompt.prompt();
+    if (outcome === 'accepted') {
+      setInstallPrompt(null);
+      setIsAppInstalled(true);
+    }
+  };
+
   // ── BOOT SEQUENCE STATE ─────────────────────────────────────────
   const [showBoot,    setShowBoot]    = useState(false);
   const [appReady,    setAppReady]    = useState(false);
@@ -3587,7 +3623,34 @@ export default function App() {
 
                   <div className="flex items-center gap-3 flex-wrap justify-end">
                     <SystemIntegrityBar integrity={systemIntegrity} />
-
+                    
+{/* ── PWA INSTALL BUTTON — only shows before install ── */}
+                  {installPrompt && !isAppInstalled && (
+                    <motion.button
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.94 }}
+                      onClick={handleInstallClick}
+                      animate={{
+                        boxShadow: [
+                          '0 0 8px rgba(0,245,255,0.3)',
+                          '0 0 20px rgba(0,245,255,0.7)',
+                          '0 0 8px rgba(0,245,255,0.3)',
+                        ],
+                      }}
+                      transition={{ repeat: Infinity, duration: 2 }}
+                      className="flex items-center gap-1.5 px-3 py-1.5 font-mono font-black tracking-wider"
+                      style={{
+                        background: 'rgba(0,245,255,0.12)',
+                        border: '1px solid rgba(0,245,255,0.6)',
+                        color: '#00f5ff',
+                        fontSize: 10,
+                      }}
+                    >
+                      <Download size={11} />
+                      <span className="hidden sm:inline">INSTALL APP</span>
+                    </motion.button>
+                  )}
+                    
                     {timerTaskId && (
                       <motion.button
                         animate={timerIsRunning ? { boxShadow: ['0 0 6px #00ff41', '0 0 18px #00ff41', '0 0 6px #00ff41'] } : {}}
