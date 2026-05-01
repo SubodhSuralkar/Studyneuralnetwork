@@ -1,0 +1,27 @@
+{
+	"name": "MHT-CET NEXUS — RPG Study OS",
+	"short_name": "NEXUS",
+	"description": "Neural-Warfare Study OS for MHT-CET domination.",
+	"start_url": "/",
+	"display": "standalone",
+	"background_color": "#000000",
+	"theme_color": "#000000",
+	"orientation": "portrait-primary",
+	"scope": "/",
+	"icons": [
+		{
+			"src": "/icon-192.png",
+			"sizes": "192x192",
+			"type": "image/png",
+			"purpose": "any maskable"
+		},
+		{
+			"src": "/icon-512.png",
+			"sizes": "512x512",
+			"type": "image/png",
+			"purpose": "any maskable"
+		}
+	],
+	"screenshots": [],
+	"categories": ["education", "productivity"]
+}
