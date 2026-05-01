@@ -211,53 +211,71 @@ function getCampaignStartEpoch() {
   return epoch;
 }
 
+// Ghost handicap constants — Challenger difficulty
+const GHOST_BASE_CHAPTERS = 6;   // User's 4 done + 2 lead buffer
+const GHOST_SLOPE         = CAMPAIGN_CHAPTERS_TOTAL - GHOST_BASE_CHAPTERS; // 21 - 6 = 15
+
 function getGhostMetrics(completedCount) {
-  const campaignStart  = getCampaignStartEpoch();
-  const campaignEnd    = campaignStart + CAMPAIGN_TOTAL_DAYS * 24 * 3600 * 1000;
-  const now            = Date.now();
-
-  // Clamp elapsed to [0, totalDuration]
+  const campaignStart   = getCampaignStartEpoch();
+  const campaignEnd     = campaignStart + CAMPAIGN_TOTAL_DAYS * 24 * 3600 * 1000;
+  const now             = Date.now();
   const totalDurationMs = campaignEnd - campaignStart;
+
+  // Clamp time fraction to [0, 1] so ghost never overshoots after deadline.
   const elapsedMs       = Math.min(Math.max(now - campaignStart, 0), totalDurationMs);
-  const elapsedFraction = elapsedMs / totalDurationMs; // 0 → 1
+  const timeFraction    = elapsedMs / totalDurationMs;
 
-  // Ghost position: chapters the ghost has completed by now
-  const ghostChaptersFloat = elapsedFraction * CAMPAIGN_CHAPTERS_TOTAL;
-  const ghostProgress      = (ghostChaptersFloat / CAMPAIGN_CHAPTERS_TOTAL) * 100; // 0–100%
-  const actualProgress     = (completedCount / CAMPAIGN_CHAPTERS_TOTAL) * 100;     // 0–100%
+  // ── CHALLENGER FORMULA ─────────────────────────────────────────
+  // Ghost starts at GHOST_BASE_CHAPTERS and climbs to CAMPAIGN_CHAPTERS_TOTAL
+  // over the full 8-day window. Clamped so it never exceeds 21.
+  const ghostChapterTarget = Math.min(
+    CAMPAIGN_CHAPTERS_TOTAL,
+    GHOST_BASE_CHAPTERS + GHOST_SLOPE * timeFraction
+  );
 
-  const isAhead     = actualProgress >= ghostProgress;
-  const deltaChaps  = Math.abs(ghostChaptersFloat - completedCount);
-  const deltaPct    = Math.abs(actualProgress - ghostProgress);
+  const ghostProgress  = (ghostChapterTarget / CAMPAIGN_CHAPTERS_TOTAL) * 100;  // 0–100
+  const actualProgress = (completedCount    / CAMPAIGN_CHAPTERS_TOTAL) * 100;  // 0–100
 
-  // Daily target: how many chapters must be done before 02:00 AM tonight?
-  // Calculate how many ghost-chapters should be done by tonight's 02:00 AM.
-  const todayStart      = new Date();
-  const sixAMToday      = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate(), 6, 0, 0, 0);
-  if (todayStart < sixAMToday) sixAMToday.setDate(sixAMToday.getDate() - 1);
-  const todayDeadline   = new Date(sixAMToday.getTime() + 24 * 3600 * 1000); // next 06:00 AM → i.e., 2 AM buffer included
+  const isAhead    = completedCount >= ghostChapterTarget;
+  const deltaChaps = Math.abs(ghostChapterTarget - completedCount);
+  const deltaPct   = Math.abs(ghostProgress - actualProgress);
 
-  const daysElapsedFull  = (todayDeadline.getTime() - campaignStart) / (24 * 3600 * 1000);
-  const ghostByDeadline  = Math.min(1, daysElapsedFull / CAMPAIGN_TOTAL_DAYS) * CAMPAIGN_CHAPTERS_TOTAL;
-  const chaptersNeededToday = Math.max(0, Math.ceil(ghostByDeadline - completedCount));
+  // ── CHAPTERS NEEDED TODAY (by 02:00 AM) ───────────────────────
+  // Project where the ghost will be at tonight's 02:00 AM deadline,
+  // then subtract what the user has already done.
+  const now2             = new Date();
+  const todayBase        = new Date(now2.getFullYear(), now2.getMonth(), now2.getDate(), 6, 0, 0, 0);
+  // If it's currently before 06:00 AM, the current game-day started yesterday.
+  if (now2 < todayBase) todayBase.setDate(todayBase.getDate() - 1);
+  // 02:00 AM next calendar day = 20 hours after today's 06:00 AM start.
+  const tonightDeadline  = new Date(todayBase.getTime() + 20 * 3600 * 1000);
 
-  // Days left
+  const deadlineFraction = Math.min(
+    1,
+    Math.max(0, (tonightDeadline.getTime() - campaignStart) / totalDurationMs)
+  );
+  const ghostAtDeadline  = Math.min(
+    CAMPAIGN_CHAPTERS_TOTAL,
+    GHOST_BASE_CHAPTERS + GHOST_SLOPE * deadlineFraction
+  );
+
+  const chaptersNeededToday = Math.max(0, Math.ceil(ghostAtDeadline - completedCount));
+
   const daysLeft = Math.max(0, (campaignEnd - now) / (24 * 3600 * 1000));
 
   return {
-    ghostProgress,      // 0–100 float
-    actualProgress,     // 0–100 float
-    ghostChaptersFloat, // raw ghost chapter count
+    ghostProgress,        // 0–100 float  → drives the ghost bar width
+    actualProgress,       // 0–100 float  → drives your bar width
+    ghostChapterTarget,   // raw float, e.g. 7.34 chapters
     isAhead,
     deltaChaps,
     deltaPct,
-    chaptersNeededToday,
+    chaptersNeededToday,  // integer, chapters needed before 02:00 AM tonight
     daysLeft,
     campaignStart,
     campaignEnd,
   };
 }
-
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 2 — PURE HELPERS
 // ═══════════════════════════════════════════════════════════════════
