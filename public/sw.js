@@ -12,8 +12,8 @@ const OFFLINE_URL = "/";
 const PRE_CACHE_URLS = [
 	"/",
 	"/manifest.json",
-	"/logo-512.jpg",
-	"/logo.jpg",
+	"/logo-512.png",
+	"/logo.png",
 	"/smoke-detector-1.mp3",
 ];
 
