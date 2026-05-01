@@ -160,9 +160,9 @@ const RANK_THRESHOLDS = [
 ];
 
 const TIMER_PRESETS = [
+  { label: '5m',  seconds: 5  * 60 },
   { label: '25m',  seconds: 25  * 60 },
-  { label: '50m',  seconds: 50  * 60 },
-  { label: '120m', seconds: 120 * 60 },
+  { label: '50m', seconds: 50 * 60 },
 ];
 
 const LEVEL_THRESHOLDS = [
@@ -208,8 +208,8 @@ function getLevelProgress(xp) {
 }
 
 function getSystemTheme(level) {
-  if (level >= 25) return 'god';
-  if (level >= 12) return 'neon';
+  if (level >= 19) return 'god';
+  if (level >= 10) return 'neon';
   return 'dim';
 }
 
