@@ -1295,8 +1295,8 @@ function GhostPacingBar({ completedCount, systemTheme }) {
     return () => clearInterval(id);
   }, [completedCount]);
 
-  const {
-    ghostProgress, actualProgress, ghostChaptersFloat,
+ const {
+    ghostProgress, actualProgress, ghostChapterTarget,
     isAhead, deltaChaps, deltaPct,
     chaptersNeededToday, daysLeft,
   } = metrics;
@@ -1470,7 +1470,7 @@ function GhostPacingBar({ completedCount, systemTheme }) {
 
       {/* Ghost pace formula (dim debug line) */}
       <div className="mt-2 font-mono" style={{ color: 'rgba(50,70,100,0.5)', fontSize: 8 }}>
-        GHOST FORMULA: {ghostChaptersFloat.toFixed(2)} chapters elapsed ÷ {CAMPAIGN_CHAPTERS_TOTAL} total
+       GHOST FORMULA: {ghostChapterTarget.toFixed(2)} chapters elapsed ÷ {CAMPAIGN_CHAPTERS_TOTAL} total
         = {ghostProgress.toFixed(1)}% pace │ TARGET: {(CAMPAIGN_CHAPTERS_TOTAL / CAMPAIGN_TOTAL_DAYS).toFixed(2)} ch/day
       </div>
     </div>
