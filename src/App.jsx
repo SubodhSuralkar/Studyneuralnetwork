@@ -117,6 +117,10 @@ const INTEGRITY_IDLE_THRESHOLD_MS = 60 * 60 * 1000;
 const INTEGRITY_DECAY_AMOUNT      = 15;
 const INTEGRITY_RESTORE_AMOUNT    = 20;
 
+// ── NEURAL ALARM THRESHOLD ──────────────────────────────────────────
+const ALARM_INTEGRITY_THRESHOLD   = 60;
+const VIGNETTE_INTEGRITY_THRESHOLD = 40;
+
 const POWER_HOUR_DURATION_MS = 90 * 60 * 1000;
 const POWER_HOUR_MULTIPLIER  = 2;
 
@@ -125,7 +129,6 @@ const LEISURE_MINUTES_PER_PYQ = 2;
 const MICRO_MISSION_TARGET_PYQS    = 2;
 const MICRO_MISSION_DURATION_SECS  = 10 * 60;
 
-// ── NEW: Temporal War-Map constant ──────────────────────────────────
 const WAR_WINDOW_DAYS = 8;
 
 const DIFF_CONFIG = {
@@ -175,7 +178,7 @@ const BOOT_LINES = [
   "Let's begin the Story of the Greatest.",
 ];
 
-const DAY_NAMES = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
+const DAY_NAMES   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -206,7 +209,7 @@ function getLevelProgress(xp) {
 
 function getSystemTheme(level) {
   if (level >= 25) return 'god';
-  if (level >= 12)  return 'neon';
+  if (level >= 12) return 'neon';
   return 'dim';
 }
 
@@ -244,7 +247,6 @@ function getPowerHourSecondsLeft(powerHourEnd) {
   return Math.max(0, Math.floor((powerHourEnd - Date.now()) / 1000));
 }
 
-// ── date helpers for war-map ────────────────────────────────────────
 function stripTime(epoch) {
   const d = new Date(epoch);
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
@@ -359,23 +361,50 @@ function playComboShatter() {
   } catch {}
 }
 
+// ─── NEURAL GLITCH CSS GENERATOR ──────────────────────────────────
+// Threshold lowered to 60 to match ALARM_INTEGRITY_THRESHOLD.
+// Two tiers:
+//   60–40 → moderate shake + scanline tint
+//   <40   → heavy shake + vignette overlay
 function getGlitchStyles(integrity) {
-  if (integrity >= 50) return '';
-  const intensity   = (50 - integrity) / 50;
-  const shakeAmt    = Math.round(intensity * 4);
+  if (integrity >= ALARM_INTEGRITY_THRESHOLD) return '';
+
+  const raw60     = (ALARM_INTEGRITY_THRESHOLD - integrity) / ALARM_INTEGRITY_THRESHOLD; // 0→1 as integrity 60→0
+  const intensity = Math.min(1, raw60);
+
+  // Shake pixel amount: tier-1 up to 4px, tier-2 up to 10px
+  const shakeAmt = integrity < VIGNETTE_INTEGRITY_THRESHOLD
+    ? Math.round(4 + ((VIGNETTE_INTEGRITY_THRESHOLD - integrity) / VIGNETTE_INTEGRITY_THRESHOLD) * 6)
+    : Math.round(intensity * 4);
+
   const scanOpacity = (intensity * 0.12).toFixed(3);
+  const animDuration = Math.max(0.18, 0.9 - intensity * 0.65).toFixed(2);
+
+  // Vignette only below 40%
+  const vignetteOpacity = integrity < VIGNETTE_INTEGRITY_THRESHOLD
+    ? ((VIGNETTE_INTEGRITY_THRESHOLD - integrity) / VIGNETTE_INTEGRITY_THRESHOLD * 0.6).toFixed(3)
+    : '0';
+
   return `
     @keyframes glitch-shake {
-      0%, 100% { transform: translate(0, 0) skewX(0); }
-      10% { transform: translate(-${shakeAmt}px, 1px) skewX(-${intensity}deg); }
-      20% { transform: translate(${shakeAmt}px, -1px) skewX(${intensity * 0.5}deg); }
-      30% { transform: translate(-${Math.round(shakeAmt * 0.6)}px, 0) skewX(0); }
-      40% { transform: translate(${Math.round(shakeAmt * 0.8)}px, 1px) skewX(${intensity * 0.3}deg); }
-      50% { transform: translate(0, 0) skewX(0); }
+      0%,  100% { transform: translate(0, 0) skewX(0deg); }
+      10%        { transform: translate(-${shakeAmt}px, 1px) skewX(-${(intensity * 2).toFixed(1)}deg); }
+      20%        { transform: translate(${shakeAmt}px, -1px) skewX(${(intensity).toFixed(1)}deg); }
+      30%        { transform: translate(-${Math.round(shakeAmt * 0.6)}px, 0px) skewX(0deg); }
+      40%        { transform: translate(${Math.round(shakeAmt * 0.8)}px, 1px) skewX(${(intensity * 0.5).toFixed(1)}deg); }
+      50%        { transform: translate(0px, 0px) skewX(0deg); }
+      60%        { transform: translate(-${Math.round(shakeAmt * 0.4)}px, -1px) skewX(${(intensity * 0.3).toFixed(1)}deg); }
+      70%        { transform: translate(${Math.round(shakeAmt * 0.7)}px, 0px) skewX(0deg); }
+      80%        { transform: translate(-${Math.round(shakeAmt * 0.5)}px, 1px) skewX(-${(intensity * 0.4).toFixed(1)}deg); }
+      90%        { transform: translate(${Math.round(shakeAmt * 0.3)}px, -1px) skewX(0deg); }
     }
     @keyframes scanline-drift {
       0%   { transform: translateY(-100%); }
       100% { transform: translateY(100vh); }
+    }
+    @keyframes vignette-pulse {
+      0%, 100% { opacity: ${vignetteOpacity}; }
+      50%       { opacity: ${(parseFloat(vignetteOpacity) * 1.4).toFixed(3)}; }
     }
     .glitch-scanlines::after {
       content: '';
@@ -392,10 +421,23 @@ function getGlitchStyles(integrity) {
       );
     }
     .glitch-body {
-      animation: glitch-shake ${Math.max(0.3, 1 - intensity * 0.6).toFixed(2)}s ease-in-out infinite;
+      animation: glitch-shake ${animDuration}s ease-in-out infinite;
     }
     .glitch-color-shift {
-      filter: hue-rotate(${Math.round(intensity * 30)}deg) saturate(${1 + intensity * 0.5});
+      filter: hue-rotate(${Math.round(intensity * 30)}deg) saturate(${(1 + intensity * 0.5).toFixed(2)});
+    }
+    .vignette-overlay::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 9989;
+      background: radial-gradient(
+        ellipse at center,
+        transparent 40%,
+        rgba(180, 0, 0, ${vignetteOpacity}) 100%
+      );
+      animation: vignette-pulse 1.6s ease-in-out infinite;
     }
   `;
 }
@@ -1125,17 +1167,17 @@ function MemoryNode({ node, onCheck }) {
 function SystemIntegrityBar({ integrity }) {
   const color =
     integrity >= 75 ? '#00ff41' :
-    integrity >= 50 ? '#ffff00' :
-    integrity >= 25 ? '#ff6b00' : '#ff0000';
+    integrity >= 60 ? '#ffff00' :
+    integrity >= 40 ? '#ff6b00' : '#ff0000';
   const label =
     integrity >= 75 ? 'STABLE'   :
-    integrity >= 50 ? 'DEGRADED' :
-    integrity >= 25 ? 'CRITICAL' : 'FAILING';
+    integrity >= 60 ? 'DEGRADED' :
+    integrity >= 40 ? 'CRITICAL' : 'FAILING';
 
   return (
     <div className="flex items-center gap-3">
       <div className="flex items-center gap-1.5">
-        {integrity >= 50 ? <Wifi size={11} color={color} /> : (
+        {integrity >= 60 ? <Wifi size={11} color={color} /> : (
           <motion.div animate={{ opacity: [1, 0.2, 1] }} transition={{ repeat: Infinity, duration: 0.7 }}>
             <WifiOff size={11} color={color} />
           </motion.div>
@@ -1154,19 +1196,65 @@ function SystemIntegrityBar({ integrity }) {
   );
 }
 
+// ─── NEURAL ALARM BANNER ───────────────────────────────────────────
+// Shows a persistent UI warning when the alarm is firing.
+function NeuralAlarmBanner({ integrity, onDismiss }) {
+  const isCritical = integrity < VIGNETTE_INTEGRITY_THRESHOLD;
+  return (
+    <motion.div
+      initial={{ height: 0, opacity: 0 }}
+      animate={{ height: 'auto', opacity: 1 }}
+      exit={{ height: 0, opacity: 0 }}
+      className="overflow-hidden"
+    >
+      <motion.div
+        animate={{
+          background: isCritical
+            ? ['rgba(180,0,0,0.25)', 'rgba(255,0,0,0.12)', 'rgba(180,0,0,0.25)']
+            : ['rgba(120,0,0,0.18)', 'rgba(255,60,0,0.08)', 'rgba(120,0,0,0.18)'],
+        }}
+        transition={{ repeat: Infinity, duration: isCritical ? 0.7 : 1.4 }}
+        className="px-4 py-2 flex items-center justify-between"
+        style={{ border: `1px solid ${isCritical ? 'rgba(255,0,0,0.7)' : 'rgba(255,60,0,0.45)'}` }}
+      >
+        <div className="flex items-center gap-3">
+          <motion.div
+            animate={{ scale: [1, 1.4, 1], opacity: [1, 0.5, 1] }}
+            transition={{ repeat: Infinity, duration: isCritical ? 0.5 : 0.9 }}
+          >
+            <AlertTriangle size={15} color={isCritical ? '#ff0000' : '#ff4400'} />
+          </motion.div>
+          <span className="font-mono text-xs font-black tracking-widest"
+            style={{ color: isCritical ? '#ff3333' : '#ff6633', textShadow: `0 0 8px ${isCritical ? '#ff0000' : '#ff4400'}` }}>
+            {isCritical
+              ? `⚠ NEURAL DECAY CRITICAL — ${Math.round(integrity)}% INTEGRITY — START A POMODORO NOW`
+              : `⚠ NEURAL ALARM — ${Math.round(integrity)}% INTEGRITY — SYSTEM DEGRADING — ENGAGE TIMER TO SILENCE`}
+          </span>
+        </div>
+        <button
+          onClick={onDismiss}
+          className="font-mono text-xs px-2 py-1 ml-3 flex-shrink-0"
+          style={{ border: '1px solid rgba(255,60,0,0.35)', color: 'rgba(255,80,0,0.6)', background: 'transparent' }}
+          title="Dismiss banner (alarm still active)"
+        >
+          ✕
+        </button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════
-// SECTION 4.5 — TEMPORAL WAR-MAP (NEW)
+// SECTION 4.5 — TEMPORAL WAR-MAP
 // ═══════════════════════════════════════════════════════════════════
 
 function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCount, systemTheme }) {
-  // ── Real-time countdown tick ────────────────────────────────────
   const [now, setNow] = useState(Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(id);
   }, []);
 
-  // ── Build 8-day grid from warStartDate ─────────────────────────
   const startMidnight = stripTime(warStartDate);
   const deadlineMs    = startMidnight + WAR_WINDOW_DAYS * 86400000;
 
@@ -1178,8 +1266,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
     return { i, dayStart, dayEnd, dayKey, d };
   });
 
-  // ── Group archives by calendar day ─────────────────────────────
-  // Only count real chapter completions (not revision nodes)
   const archivesByDay = {};
   warArchives.forEach((entry) => {
     if (entry.isRevisionNode || !entry.completedAt) return;
@@ -1188,7 +1274,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
     archivesByDay[key].push(entry);
   });
 
-  // ── Velocity & projection ──────────────────────────────────────
   const daysSinceStart  = Math.max(0.01, (now - startMidnight) / 86400000);
   const chaptersPerDay  = completedCount / daysSinceStart;
   const remaining       = totalChapters - completedCount;
@@ -1197,10 +1282,9 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
     : Infinity;
 
   const projectedMs     = now + daysRequired * 86400000;
-  const daysAheadBehind = (deadlineMs - projectedMs) / 86400000; // positive = ahead
+  const daysAheadBehind = (deadlineMs - projectedMs) / 86400000;
   const isOnTrack       = daysAheadBehind >= 0;
 
-  // Deadline countdown
   const msToDeadline    = Math.max(0, deadlineMs - now);
   const cdDays          = Math.floor(msToDeadline / 86400000);
   const cdHrs           = Math.floor((msToDeadline % 86400000) / 3600000);
@@ -1214,13 +1298,9 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
   const velocityColor  = isOnTrack ? '#00ff41' : '#ff3333';
   const accentColor    = systemTheme === 'god' ? '#ffd700' : '#00f5ff';
 
-  // Max chapters in any single day (for bar scaling)
   const maxDayChapters = Math.max(1, ...Object.values(archivesByDay).map((a) => a.length));
-
-  // Today's key
   const todayKey = isoDay(now);
 
-  // ── Intelligence status text ────────────────────────────────────
   let intelligenceText = '';
   if (remaining === 0) {
     intelligenceText = '⚡ SYLLABUS 100% ANNIHILATED — MISSION ACCOMPLISHED.';
@@ -1232,7 +1312,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
     intelligenceText = `⚠ AT CURRENT VELOCITY, SYLLABUS BREACH IN ${daysRequired.toFixed(1)} DAYS — ${Math.abs(daysAheadBehind).toFixed(1)} DAYS PAST DEADLINE. ACCELERATE.`;
   }
 
-  // 3-day rolling average (if enough data)
   const recentDays = days.filter(({ dayKey }) => {
     const d = new Date(dayKey);
     return (now - d.getTime()) < 3 * 86400000 && archivesByDay[dayKey];
@@ -1243,7 +1322,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
 
   return (
     <section>
-      {/* Section divider */}
       <div className="flex items-center gap-3 mb-5">
         <div className="h-px flex-1" style={{ background: `linear-gradient(90deg, ${accentColor}, transparent)` }} />
         <div className="flex items-center gap-2">
@@ -1261,8 +1339,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
         border: `1px solid ${accentColor}25`,
         boxShadow: `0 0 30px ${accentColor}08`,
       }}>
-
-        {/* ── Top stat row ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-0" style={{ borderBottom: `1px solid ${accentColor}15` }}>
           {[
             {
@@ -1317,7 +1393,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
           ))}
         </div>
 
-        {/* ── Countdown to deadline ── */}
         <div className="px-5 py-3 flex items-center justify-between flex-wrap gap-2"
           style={{ borderBottom: `1px solid ${accentColor}15`, background: 'rgba(0,0,0,0.2)' }}>
           <div className="flex items-center gap-2">
@@ -1353,7 +1428,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
           </div>
         </div>
 
-        {/* ── 8-day timeline grid ── */}
         <div className="p-4">
           <div className="overflow-x-auto">
             <div style={{ display: 'grid', gridTemplateColumns: `repeat(${WAR_WINDOW_DAYS}, minmax(80px, 1fr))`, gap: 6, minWidth: 600 }}>
@@ -1363,11 +1437,9 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                 const isFuture  = dayKey > todayKey;
                 const dayChaps  = archivesByDay[dayKey] || [];
                 const chapCount = dayChaps.length;
-                const barH      = chapCount > 0 ? Math.round((chapCount / maxDayChapters) * 48) : 0;
 
-                // Projected load: if future, show how many need to be done per day to finish
-                const daysLeft      = Math.max(1, WAR_WINDOW_DAYS - i);
-                const chapsNeeded   = isFuture ? Math.ceil(remaining / daysLeft) : 0;
+                const daysLeft    = Math.max(1, WAR_WINDOW_DAYS - i);
+                const chapsNeeded = isFuture ? Math.ceil(remaining / daysLeft) : 0;
 
                 const cardBorder = isToday
                   ? `2px solid ${accentColor}`
@@ -1396,7 +1468,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                       overflow: 'hidden',
                     }}
                   >
-                    {/* Past: diagonal slash overlay */}
                     {isPast && chapCount === 0 && (
                       <div className="absolute inset-0 pointer-events-none" style={{
                         background: 'repeating-linear-gradient(-45deg, transparent, transparent 6px, rgba(255,50,50,0.04) 6px, rgba(255,50,50,0.04) 7px)',
@@ -1410,7 +1481,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                       </div>
                     )}
 
-                    {/* Today: pulsing ring */}
                     {isToday && (
                       <motion.div
                         className="absolute inset-0 pointer-events-none"
@@ -1420,7 +1490,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                       />
                     )}
 
-                    {/* Day header */}
                     <div className="px-2 pt-2 pb-1">
                       <div className="font-mono font-black" style={{
                         color: isToday ? accentColor : isPast ? 'rgba(80,100,120,0.6)' : 'rgba(100,130,160,0.5)',
@@ -1440,7 +1509,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                       </div>
                     </div>
 
-                    {/* YOU ARE HERE badge */}
                     {isToday && (
                       <motion.div
                         animate={{ opacity: [1, 0.6, 1] }}
@@ -1455,11 +1523,9 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                       >▶ YOU ARE HERE</motion.div>
                     )}
 
-                    {/* Chapter bar / count */}
                     <div className="flex-1 px-2 pb-2 flex flex-col justify-end">
                       {chapCount > 0 ? (
                         <>
-                          {/* Stacked mini bars per subject */}
                           <div className="mb-1">
                             {Object.entries(SUBJECT_CONFIG).map(([subj, sc]) => {
                               const subjCount = dayChaps.filter(a => a.subject === subj).length;
@@ -1510,7 +1576,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                       )}
                     </div>
 
-                    {/* Day index pip */}
                     <div className="absolute top-1.5 right-1.5 font-mono" style={{ color: 'rgba(40,60,80,0.4)', fontSize: 7 }}>
                       D{i + 1}
                     </div>
@@ -1520,7 +1585,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
             </div>
           </div>
 
-          {/* ── Timeline ruler ── */}
           <div className="mt-2 relative" style={{ height: 16 }}>
             <div className="absolute inset-0 flex">
               {days.map(({ dayKey }, i) => (
@@ -1532,7 +1596,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
             <div className="absolute bottom-0 left-0 right-0 h-0.5" style={{ background: `linear-gradient(90deg, ${accentColor}60, rgba(40,60,80,0.2))` }} />
           </div>
 
-          {/* ── Velocity forecast bar ── */}
           <div className="mt-4 p-3" style={{ background: 'rgba(0,0,0,0.25)', border: '1px solid rgba(40,60,80,0.3)' }}>
             <div className="flex items-center justify-between mb-2">
               <span className="font-mono tracking-widest" style={{ color: 'rgba(100,130,160,0.6)', fontSize: 9 }}>
@@ -1543,14 +1606,12 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
               </span>
             </div>
             <div className="relative h-4 overflow-hidden" style={{ background: '#030810', border: '1px solid rgba(30,50,70,0.4)' }}>
-              {/* Completed */}
               <motion.div
                 className="absolute left-0 top-0 h-full"
                 style={{ background: `linear-gradient(90deg, ${velocityColor}, ${velocityColor}aa)`, boxShadow: `0 0 8px ${velocityColor}` }}
                 animate={{ width: `${(completedCount / totalChapters) * 100}%` }}
                 transition={{ duration: 1 }}
               />
-              {/* Projected fill (faded) */}
               {daysRequired !== Infinity && daysRequired > 0 && (
                 <motion.div
                   className="absolute top-0 h-full"
@@ -1563,7 +1624,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
                   transition={{ duration: 1, delay: 0.3 }}
                 />
               )}
-              {/* Deadline marker at 100% */}
               <div className="absolute right-0 top-0 h-full" style={{ width: 2, background: '#ff3333', boxShadow: '0 0 4px #ff3333' }} />
               <div className="absolute inset-0 flex items-center justify-center">
                 <span className="font-mono text-white font-black" style={{ fontSize: 8, mixBlendMode: 'difference' }}>
@@ -1573,7 +1633,6 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
             </div>
           </div>
 
-          {/* ── Intelligence report ── */}
           <motion.div
             animate={!isOnTrack && remaining > 0 ? {
               borderColor: ['rgba(255,51,51,0.3)', 'rgba(255,51,51,0.7)', 'rgba(255,51,51,0.3)'],
@@ -2384,10 +2443,18 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
 
 export default function App() {
 
+  // ── NEURAL ALARM REF ────────────────────────────────────────────
+  // alarmRef holds the Audio object. Initialized inside handleInitialize
+  // so it's created after a user gesture (required by browsers).
+  const alarmRef = useRef(null);
+
   // ── BOOT SEQUENCE STATE ─────────────────────────────────────────
   const [showBoot,    setShowBoot]    = useState(false);
   const [appReady,    setAppReady]    = useState(false);
   const [bootChecked, setBootChecked] = useState(false);
+
+  // storyStarted = appReady (the story has begun after boot)
+  const storyStarted = appReady;
 
   useEffect(() => {
     const lastLogin = LS.get('last_login_epoch', null);
@@ -2408,11 +2475,10 @@ export default function App() {
   const userLevel   = getUserLevel(totalXP);
   const systemTheme = getSystemTheme(userLevel);
 
-  // ── WAR START DATE (new) ────────────────────────────────────────
+  // ── WAR START DATE ──────────────────────────────────────────────
   const [warStartDate, setWarStartDate] = useState(() => {
     const saved = LS.get('war_start_date', null);
     if (saved) return saved;
-    // Fallback: if user already has progress, use "now" as start
     return Date.now();
   });
 
@@ -2436,6 +2502,12 @@ export default function App() {
   const [systemIntegrity, setSystemIntegrity] = useState(() => LS.get('system_integrity', 100));
   const lastPomoStartRef  = useRef(LS.get('last_pomo_start_epoch', 0));
   const integrityTimerRef = useRef(null);
+
+  // ── ALARM BANNER DISMISS ────────────────────────────────────────
+  // User can temporarily dismiss the banner (alarm still runs in bg).
+  // Banner re-appears if integrity drops further.
+  const [alarmBannerDismissed, setAlarmBannerDismissed] = useState(false);
+  const prevIntegrityRef = useRef(systemIntegrity);
 
   // ── CORE APP STATE ──────────────────────────────────────────────
   const [completedChapters, setCompletedChapters] = useState(() => LS.get('completed_chapters', []));
@@ -2547,6 +2619,46 @@ export default function App() {
     return () => clearInterval(integrityTimerRef.current);
   }, []);
 
+  // ══════════════════════════════════════════════════════════════════
+  // NEURAL ALARM — CORE useEffect
+  // Condition: integrity < 60 AND timer not running AND story started
+  // Behaviour:
+  //   - Condition met  → play alarm (looped)
+  //   - Timer starts   → pause + reset alarm
+  //   - Integrity ≥ 60 → pause + reset alarm
+  //   - Re-dismiss banner whenever integrity crosses into a new tier
+  // ══════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!alarmRef.current) return; // alarm not initialised yet (pre-boot)
+
+    const alarmShouldFire = systemIntegrity < ALARM_INTEGRITY_THRESHOLD
+                            && !timerIsRunning
+                            && storyStarted;
+
+    if (alarmShouldFire) {
+      // Re-show banner if integrity crossed into critical tier
+      const wasAboveVignette = prevIntegrityRef.current >= VIGNETTE_INTEGRITY_THRESHOLD;
+      const nowBelowVignette = systemIntegrity < VIGNETTE_INTEGRITY_THRESHOLD;
+      if (wasAboveVignette && nowBelowVignette) {
+        // Integrity just crossed 40% — force banner back
+        setAlarmBannerDismissed(false);
+      }
+      prevIntegrityRef.current = systemIntegrity;
+
+      alarmRef.current.play().catch(() => {
+        // Autoplay may be blocked; silently fail.
+        // The banner still shows so the user knows something is wrong.
+      });
+    } else {
+      // Silence the alarm
+      if (alarmRef.current) {
+        alarmRef.current.pause();
+        alarmRef.current.currentTime = 0;
+      }
+      prevIntegrityRef.current = systemIntegrity;
+    }
+  }, [systemIntegrity, timerIsRunning, storyStarted]);
+
   // ── TIMER TICK ───────────────────────────────────────────────────
   const tickRef = useRef(null);
 
@@ -2590,10 +2702,15 @@ export default function App() {
   const handleToggleTimer = useCallback(() => {
     setTimerIsRunning((prev) => {
       if (!prev) {
+        // Timer starting — restore integrity, silence alarm
         sessionStartEpochRef.current  = Date.now();
         lastPomoStartRef.current      = Date.now();
         LS.set('last_pomo_start_epoch', Date.now());
-        setSystemIntegrity((si) => Math.min(100, si + INTEGRITY_RESTORE_AMOUNT));
+        setSystemIntegrity((si) => {
+          const next = Math.min(100, si + INTEGRITY_RESTORE_AMOUNT);
+          return next;
+        });
+        // Alarm silenced by the main useEffect reacting to timerIsRunning → true
       } else {
         if (sessionStartEpochRef.current !== null && timerTaskId) {
           const elapsed  = Math.floor((Date.now() - sessionStartEpochRef.current) / 1000);
@@ -2649,7 +2766,20 @@ export default function App() {
   const activeTimerTask  = missions.find((m) => m.id === timerTaskId) || null;
 
   // ── BOOT INITIALIZE HANDLER ─────────────────────────────────────
+  // This is the user gesture that lets us create and store the Audio object.
   const handleInitialize = useCallback(() => {
+    // ── NEURAL ALARM SETUP (inside user-gesture handler) ──────────
+    try {
+      const audio = new Audio('/smoke-detector-1.mp3');
+      audio.loop = true;
+      // Pre-load so it's ready to play instantly
+      audio.load();
+      alarmRef.current = audio;
+    } catch (e) {
+      // Audio creation failed (e.g., in sandboxed env) — degrade gracefully
+      console.warn('Neural Alarm: Audio init failed', e);
+    }
+
     setShowBoot(false);
     setAppReady(true);
 
@@ -2666,6 +2796,16 @@ export default function App() {
     LS.set('power_hour_end', end);
     firePowerHourConfetti();
     playNeuralSync();
+  }, []);
+
+  // Cleanup alarm audio on unmount
+  useEffect(() => {
+    return () => {
+      if (alarmRef.current) {
+        alarmRef.current.pause();
+        alarmRef.current.src = '';
+      }
+    };
   }, []);
 
   // ── EPISODE UNLOCK HELPER ───────────────────────────────────────
@@ -2685,9 +2825,8 @@ export default function App() {
     ((totalXP - currentRank.min) / (Math.max(nextRank.min, currentRank.min + 1) - currentRank.min)) * 100
   );
 
-  const activeMemoryNodes = [...revisions].sort((a, b) => a.completedAt - b.completedAt);
-
-  const availableChapters = SYLLABUS[formSubject].filter(
+  const activeMemoryNodes  = [...revisions].sort((a, b) => a.completedAt - b.completedAt);
+  const availableChapters  = SYLLABUS[formSubject].filter(
     (ch) => !completedChapters.includes(`${formSubject}::${ch.name}`)
   );
   const alreadyQueuedNames = missions
@@ -2891,9 +3030,22 @@ export default function App() {
     LS.remove(`time_spent_${taskId}`);
   };
 
-  // ── DYNAMIC STYLES ──────────────────────────────────────────────
+  // ── COMPUTED GLITCH/ALARM STATE ─────────────────────────────────
+  const alarmIsActive     = storyStarted && systemIntegrity < ALARM_INTEGRITY_THRESHOLD && !timerIsRunning;
+  const vignetteIsActive  = alarmIsActive && systemIntegrity < VIGNETTE_INTEGRITY_THRESHOLD;
+  const showAlarmBanner   = alarmIsActive && !alarmBannerDismissed;
+
+  // ── DYNAMIC CSS (glitch + vignette) ────────────────────────────
   const glitchCSS = getGlitchStyles(systemIntegrity);
 
+  // Build container class list
+  const containerClasses = [
+    'min-h-screen pb-20',
+    alarmIsActive ? 'glitch-body glitch-scanlines glitch-color-shift' : '',
+    vignetteIsActive ? 'vignette-overlay' : '',
+  ].filter(Boolean).join(' ');
+
+  // ── HEADER STYLE ────────────────────────────────────────────────
   const headerStyle = systemTheme === 'god'
     ? { background: 'rgba(20,12,0,0.97)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,215,0,0.4)' }
     : systemTheme === 'neon'
@@ -2921,7 +3073,7 @@ export default function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6 }}
-            className={`min-h-screen pb-20 ${systemIntegrity < 50 ? 'glitch-scanlines glitch-body glitch-color-shift' : ''}`}
+            className={containerClasses}
             style={{ background: bgStyle, color: '#e0f0ff' }}
           >
             <style>{`
@@ -3072,6 +3224,17 @@ export default function App() {
               {isInPowerHour && <PowerHourBanner powerHourEnd={powerHourEnd} />}
             </AnimatePresence>
 
+            {/* ══ NEURAL ALARM BANNER ══ */}
+            <AnimatePresence>
+              {showAlarmBanner && (
+                <NeuralAlarmBanner
+                  key="neural-alarm-banner"
+                  integrity={systemIntegrity}
+                  onDismiss={() => setAlarmBannerDismissed(true)}
+                />
+              )}
+            </AnimatePresence>
+
             {/* HEADER */}
             <header className="no-print sticky top-0 z-50 border-b" style={headerStyle}>
               <div className="max-w-7xl mx-auto px-4 py-3">
@@ -3164,7 +3327,8 @@ export default function App() {
                   </div>
                 </div>
 
-                {systemIntegrity < 50 && (
+                {/* Integrity warning in header (only when alarm active and not in banner) */}
+                {alarmIsActive && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
                     className="mt-2 px-3 py-1.5 flex items-center gap-2"
@@ -3468,7 +3632,7 @@ export default function App() {
                 </div>
               </section>
 
-              {/* ══ SECTION 4: TEMPORAL WAR-MAP (NEW) ══ */}
+              {/* SECTION 4: TEMPORAL WAR-MAP */}
               <TemporalWarMap
                 warStartDate={warStartDate}
                 warArchives={warArchives}
@@ -3487,6 +3651,9 @@ export default function App() {
                 </div>
                 <div className="font-mono mt-0.5" style={{ color: '#0d1520', fontSize: 9 }}>
                   WAR START: {new Date(warStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} • 8-DAY CAMPAIGN WINDOW
+                </div>
+                <div className="font-mono mt-0.5" style={{ color: '#0a1018', fontSize: 9 }}>
+                  ALARM: {alarmIsActive ? `ACTIVE (${Math.round(systemIntegrity)}%)` : 'NOMINAL'} • ALARM THRESHOLD: {ALARM_INTEGRITY_THRESHOLD}% • VIGNETTE: {vignetteIsActive ? 'ON' : 'OFF'}
                 </div>
               </footer>
 
