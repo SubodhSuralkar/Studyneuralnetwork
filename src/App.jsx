@@ -112,10 +112,13 @@ const POMODORO_BREAK     = 5  * 60;
 const COMBO_WINDOW_MS    = 4  * 60 * 1000;
 const VIGILANCE_IDLE_MS  = 10 * 60 * 1000;
 const COMBO_MULTIPLIERS  = [1, 2, 5, 10, 20, 50];
-const INTEGRITY_DECAY_INTERVAL_MS = 30 * 60 * 1000;
-const INTEGRITY_IDLE_THRESHOLD_MS = 60 * 60 * 1000;
-const INTEGRITY_DECAY_AMOUNT      = 15;
-const INTEGRITY_RESTORE_AMOUNT    = 20;
+
+// ── INTEGRITY DECAY ─────────────────────────────────────────────────
+// Passive decay: 5% per hour of inactivity.
+// Implemented as a per-minute tick so the rate is always accurate.
+const INTEGRITY_DECAY_PER_HOUR   = 5;                                 // %/hr
+const INTEGRITY_DECAY_PER_MINUTE = INTEGRITY_DECAY_PER_HOUR / 60;    // ≈ 0.0833 %/min
+const INTEGRITY_RESTORE_AMOUNT   = 20;                                // restored when timer starts
 
 // ── NEURAL ALARM THRESHOLD ──────────────────────────────────────────
 const ALARM_INTEGRITY_THRESHOLD   = 60;
@@ -361,18 +364,12 @@ function playComboShatter() {
   } catch {}
 }
 
-// ─── NEURAL GLITCH CSS GENERATOR ──────────────────────────────────
-// Threshold lowered to 60 to match ALARM_INTEGRITY_THRESHOLD.
-// Two tiers:
-//   60–40 → moderate shake + scanline tint
-//   <40   → heavy shake + vignette overlay
 function getGlitchStyles(integrity) {
   if (integrity >= ALARM_INTEGRITY_THRESHOLD) return '';
 
-  const raw60     = (ALARM_INTEGRITY_THRESHOLD - integrity) / ALARM_INTEGRITY_THRESHOLD; // 0→1 as integrity 60→0
+  const raw60     = (ALARM_INTEGRITY_THRESHOLD - integrity) / ALARM_INTEGRITY_THRESHOLD;
   const intensity = Math.min(1, raw60);
 
-  // Shake pixel amount: tier-1 up to 4px, tier-2 up to 10px
   const shakeAmt = integrity < VIGNETTE_INTEGRITY_THRESHOLD
     ? Math.round(4 + ((VIGNETTE_INTEGRITY_THRESHOLD - integrity) / VIGNETTE_INTEGRITY_THRESHOLD) * 6)
     : Math.round(intensity * 4);
@@ -380,7 +377,6 @@ function getGlitchStyles(integrity) {
   const scanOpacity = (intensity * 0.12).toFixed(3);
   const animDuration = Math.max(0.18, 0.9 - intensity * 0.65).toFixed(2);
 
-  // Vignette only below 40%
   const vignetteOpacity = integrity < VIGNETTE_INTEGRITY_THRESHOLD
     ? ((VIGNETTE_INTEGRITY_THRESHOLD - integrity) / VIGNETTE_INTEGRITY_THRESHOLD * 0.6).toFixed(3)
     : '0';
@@ -1196,8 +1192,6 @@ function SystemIntegrityBar({ integrity }) {
   );
 }
 
-// ─── NEURAL ALARM BANNER ───────────────────────────────────────────
-// Shows a persistent UI warning when the alarm is firing.
 function NeuralAlarmBanner({ integrity, onDismiss }) {
   const isCritical = integrity < VIGNETTE_INTEGRITY_THRESHOLD;
   return (
@@ -2444,8 +2438,6 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
 export default function App() {
 
   // ── NEURAL ALARM REF ────────────────────────────────────────────
-  // alarmRef holds the Audio object. Initialized inside handleInitialize
-  // so it's created after a user gesture (required by browsers).
   const alarmRef = useRef(null);
 
   // ── BOOT SEQUENCE STATE ─────────────────────────────────────────
@@ -2453,7 +2445,6 @@ export default function App() {
   const [appReady,    setAppReady]    = useState(false);
   const [bootChecked, setBootChecked] = useState(false);
 
-  // storyStarted = appReady (the story has begun after boot)
   const storyStarted = appReady;
 
   useEffect(() => {
@@ -2500,12 +2491,8 @@ export default function App() {
 
   // ── SYSTEM INTEGRITY ────────────────────────────────────────────
   const [systemIntegrity, setSystemIntegrity] = useState(() => LS.get('system_integrity', 100));
-  const lastPomoStartRef  = useRef(LS.get('last_pomo_start_epoch', 0));
-  const integrityTimerRef = useRef(null);
 
   // ── ALARM BANNER DISMISS ────────────────────────────────────────
-  // User can temporarily dismiss the banner (alarm still runs in bg).
-  // Banner re-appears if integrity drops further.
   const [alarmBannerDismissed, setAlarmBannerDismissed] = useState(false);
   const prevIntegrityRef = useRef(systemIntegrity);
 
@@ -2608,49 +2595,107 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // ── INTEGRITY DECAY ─────────────────────────────────────────────
-  useEffect(() => {
-    integrityTimerRef.current = setInterval(() => {
-      const idleMs = Date.now() - lastPomoStartRef.current;
-      if (idleMs >= INTEGRITY_IDLE_THRESHOLD_MS) {
-        setSystemIntegrity((prev) => Math.max(0, prev - INTEGRITY_DECAY_AMOUNT));
-      }
-    }, INTEGRITY_DECAY_INTERVAL_MS);
-    return () => clearInterval(integrityTimerRef.current);
-  }, []);
+  // ════════════════════════════════════════════════════════════════
+  // INTEGRITY DECAY SYSTEM — REWRITTEN
+  //
+  // Strategy: use a ref that mirrors timerIsRunning so that the
+  // setInterval and visibilitychange callbacks never capture a stale
+  // closure value.  State updates from both effects trigger the alarm
+  // useEffect automatically because they change `systemIntegrity`.
+  // ════════════════════════════════════════════════════════════════
 
-  // ══════════════════════════════════════════════════════════════════
-  // NEURAL ALARM — CORE useEffect
-  // Condition: integrity < 60 AND timer not running AND story started
-  // Behaviour:
-  //   - Condition met  → play alarm (looped)
-  //   - Timer starts   → pause + reset alarm
-  //   - Integrity ≥ 60 → pause + reset alarm
-  //   - Re-dismiss banner whenever integrity crosses into a new tier
-  // ══════════════════════════════════════════════════════════════════
+  // Ref that always reflects the live timerIsRunning value.
+  const timerIsRunningRef = useRef(timerIsRunning);
   useEffect(() => {
-    if (!alarmRef.current) return; // alarm not initialised yet (pre-boot)
+    timerIsRunningRef.current = timerIsRunning;
+  }, [timerIsRunning]);
+
+  // Timestamp of when the browser tab was hidden (null = tab is visible).
+  const tabHiddenAtRef = useRef(null);
+
+  // ── PASSIVE DECAY — 1-minute interval ──────────────────────────
+  // Runs once on mount; reads timerIsRunning via ref to avoid staleness.
+  // Formula: 5 % / 60 min ≈ 0.0833 % per minute.
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      // Only decay when the timer is NOT running.
+      if (timerIsRunningRef.current) return;
+
+      setSystemIntegrity((prev) => {
+        const next = Math.max(0, prev - INTEGRITY_DECAY_PER_MINUTE);
+        LS.set('system_integrity', next);   // keep LS in sync immediately
+        return next;
+      });
+    }, 60_000); // every 60 seconds
+
+    return () => clearInterval(intervalId);
+  }, []); // intentionally empty — reads live state via ref
+
+  // ── TAB-AWAY SLASH — visibilitychange ──────────────────────────
+  // When the user hides the tab (alt-tab, K-drama, etc.) we record
+  // when they left.  On returning we calculate hours away and slash
+  // the integrity immediately by the equivalent decay amount.
+  // Guard: if the timer is running while away, no slash is applied
+  // (they might be studying with the tab in the background).
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        // Tab just became hidden — record departure time.
+        tabHiddenAtRef.current = Date.now();
+      } else {
+        // Tab became visible again.
+        if (tabHiddenAtRef.current === null) return; // safety guard
+
+        const awayMs    = Date.now() - tabHiddenAtRef.current;
+        tabHiddenAtRef.current = null;
+
+        // Only slash if the timer was not running during the absence.
+        if (timerIsRunningRef.current) return;
+
+        const awayHours  = awayMs / 3_600_000;            // ms → hours
+        const slashAmount = awayHours * INTEGRITY_DECAY_PER_HOUR; // 5 %/hr
+
+        if (slashAmount <= 0) return;
+
+        setSystemIntegrity((prev) => {
+          const next = Math.max(0, prev - slashAmount);
+          LS.set('system_integrity', next);
+          return next;
+        });
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, []); // intentionally empty — reads live state via ref
+
+  // ════════════════════════════════════════════════════════════════
+  // NEURAL ALARM — reacts to systemIntegrity + timerIsRunning.
+  // No changes needed here: the decay effects above update state,
+  // which re-triggers this effect automatically.
+  //
+  // Condition: integrity < 60 AND timer NOT running AND story started.
+  // ════════════════════════════════════════════════════════════════
+  useEffect(() => {
+    if (!alarmRef.current) return;
 
     const alarmShouldFire = systemIntegrity < ALARM_INTEGRITY_THRESHOLD
                             && !timerIsRunning
                             && storyStarted;
 
     if (alarmShouldFire) {
-      // Re-show banner if integrity crossed into critical tier
+      // Re-show banner if integrity just crossed into critical tier.
       const wasAboveVignette = prevIntegrityRef.current >= VIGNETTE_INTEGRITY_THRESHOLD;
       const nowBelowVignette = systemIntegrity < VIGNETTE_INTEGRITY_THRESHOLD;
       if (wasAboveVignette && nowBelowVignette) {
-        // Integrity just crossed 40% — force banner back
         setAlarmBannerDismissed(false);
       }
       prevIntegrityRef.current = systemIntegrity;
 
       alarmRef.current.play().catch(() => {
-        // Autoplay may be blocked; silently fail.
-        // The banner still shows so the user knows something is wrong.
+        // Autoplay may be blocked; banner still shows.
       });
     } else {
-      // Silence the alarm
       if (alarmRef.current) {
         alarmRef.current.pause();
         alarmRef.current.currentTime = 0;
@@ -2702,15 +2747,14 @@ export default function App() {
   const handleToggleTimer = useCallback(() => {
     setTimerIsRunning((prev) => {
       if (!prev) {
-        // Timer starting — restore integrity, silence alarm
-        sessionStartEpochRef.current  = Date.now();
-        lastPomoStartRef.current      = Date.now();
-        LS.set('last_pomo_start_epoch', Date.now());
+        // Timer starting — restore integrity, silence alarm.
+        sessionStartEpochRef.current = Date.now();
         setSystemIntegrity((si) => {
           const next = Math.min(100, si + INTEGRITY_RESTORE_AMOUNT);
+          LS.set('system_integrity', next);
           return next;
         });
-        // Alarm silenced by the main useEffect reacting to timerIsRunning → true
+        // The alarm useEffect reacts to timerIsRunning → true and silences automatically.
       } else {
         if (sessionStartEpochRef.current !== null && timerTaskId) {
           const elapsed  = Math.floor((Date.now() - sessionStartEpochRef.current) / 1000);
@@ -2766,24 +2810,19 @@ export default function App() {
   const activeTimerTask  = missions.find((m) => m.id === timerTaskId) || null;
 
   // ── BOOT INITIALIZE HANDLER ─────────────────────────────────────
-  // This is the user gesture that lets us create and store the Audio object.
   const handleInitialize = useCallback(() => {
-    // ── NEURAL ALARM SETUP (inside user-gesture handler) ──────────
     try {
       const audio = new Audio('/smoke-detector-1.mp3');
       audio.loop = true;
-      // Pre-load so it's ready to play instantly
       audio.load();
       alarmRef.current = audio;
     } catch (e) {
-      // Audio creation failed (e.g., in sandboxed env) — degrade gracefully
       console.warn('Neural Alarm: Audio init failed', e);
     }
 
     setShowBoot(false);
     setAppReady(true);
 
-    // Set war start date only on first ever boot
     const existingStart = LS.get('war_start_date', null);
     if (!existingStart) {
       const startEpoch = Date.now();
@@ -2798,7 +2837,7 @@ export default function App() {
     playNeuralSync();
   }, []);
 
-  // Cleanup alarm audio on unmount
+  // Cleanup alarm audio on unmount.
   useEffect(() => {
     return () => {
       if (alarmRef.current) {
@@ -3030,22 +3069,20 @@ export default function App() {
     LS.remove(`time_spent_${taskId}`);
   };
 
-  // ── COMPUTED GLITCH/ALARM STATE ─────────────────────────────────
-  const alarmIsActive     = storyStarted && systemIntegrity < ALARM_INTEGRITY_THRESHOLD && !timerIsRunning;
-  const vignetteIsActive  = alarmIsActive && systemIntegrity < VIGNETTE_INTEGRITY_THRESHOLD;
-  const showAlarmBanner   = alarmIsActive && !alarmBannerDismissed;
+  // ── COMPUTED ALARM/GLITCH STATE ─────────────────────────────────
+  const alarmIsActive    = storyStarted && systemIntegrity < ALARM_INTEGRITY_THRESHOLD && !timerIsRunning;
+  const vignetteIsActive = alarmIsActive && systemIntegrity < VIGNETTE_INTEGRITY_THRESHOLD;
+  const showAlarmBanner  = alarmIsActive && !alarmBannerDismissed;
 
-  // ── DYNAMIC CSS (glitch + vignette) ────────────────────────────
   const glitchCSS = getGlitchStyles(systemIntegrity);
 
-  // Build container class list
   const containerClasses = [
     'min-h-screen pb-20',
     alarmIsActive ? 'glitch-body glitch-scanlines glitch-color-shift' : '',
     vignetteIsActive ? 'vignette-overlay' : '',
   ].filter(Boolean).join(' ');
 
-  // ── HEADER STYLE ────────────────────────────────────────────────
+  // ── HEADER / BG STYLE ───────────────────────────────────────────
   const headerStyle = systemTheme === 'god'
     ? { background: 'rgba(20,12,0,0.97)', backdropFilter: 'blur(12px)', borderColor: 'rgba(255,215,0,0.4)' }
     : systemTheme === 'neon'
@@ -3327,7 +3364,7 @@ export default function App() {
                   </div>
                 </div>
 
-                {/* Integrity warning in header (only when alarm active and not in banner) */}
+                {/* Integrity warning in header when alarm active */}
                 {alarmIsActive && (
                   <motion.div
                     initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
@@ -3653,7 +3690,7 @@ export default function App() {
                   WAR START: {new Date(warStartDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }).toUpperCase()} • 8-DAY CAMPAIGN WINDOW
                 </div>
                 <div className="font-mono mt-0.5" style={{ color: '#0a1018', fontSize: 9 }}>
-                  ALARM: {alarmIsActive ? `ACTIVE (${Math.round(systemIntegrity)}%)` : 'NOMINAL'} • ALARM THRESHOLD: {ALARM_INTEGRITY_THRESHOLD}% • VIGNETTE: {vignetteIsActive ? 'ON' : 'OFF'}
+                  DECAY: {INTEGRITY_DECAY_PER_HOUR}%/hr passive • TAB-AWAY: immediate slash • ALARM: {alarmIsActive ? `ACTIVE (${Math.round(systemIntegrity)}%)` : 'NOMINAL'} • THRESHOLD: {ALARM_INTEGRITY_THRESHOLD}%
                 </div>
               </footer>
 
