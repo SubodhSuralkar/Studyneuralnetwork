@@ -185,6 +185,80 @@ const DAY_NAMES   = ['SUN','MON','TUE','WED','THU','FRI','SAT'];
 const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
 // ═══════════════════════════════════════════════════════════════════
+// GHOST PACING CONSTANTS
+// ═══════════════════════════════════════════════════════════════════
+const CAMPAIGN_TOTAL_DAYS     = 8;
+const CAMPAIGN_CHAPTERS_TOTAL = 21;
+const CAMPAIGN_COMPLETED_BASE = 4;   // chapters already done before sprint
+const CAMPAIGN_REMAINING      = CAMPAIGN_CHAPTERS_TOTAL - CAMPAIGN_COMPLETED_BASE; // 17
+const DAILY_START_HOUR        = 6;   // 06:00 AM
+const DAILY_END_HOUR          = 26;  // 02:00 AM next day (26 = 24+2)
+const DAILY_STUDY_HOURS       = DAILY_END_HOUR - DAILY_START_HOUR; // 20 hours/day
+const CAMPAIGN_TOTAL_HOURS    = CAMPAIGN_TOTAL_DAYS * DAILY_STUDY_HOURS; // 160 hours
+
+function getCampaignStartEpoch() {
+  // Returns the epoch of 06:00 AM on the day the campaign started.
+  // Reads from localStorage so it's anchored to first boot.
+  const saved = LS.get('ghost_campaign_start', null);
+  if (saved) return saved;
+  // First call: anchor to today's 06:00 AM.
+  const now = new Date();
+  const sixAM = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 6, 0, 0, 0);
+  // If it's currently before 06:00 AM, anchor to yesterday's 06:00 AM.
+  if (now < sixAM) sixAM.setDate(sixAM.getDate() - 1);
+  const epoch = sixAM.getTime();
+  LS.set('ghost_campaign_start', epoch);
+  return epoch;
+}
+
+function getGhostMetrics(completedCount) {
+  const campaignStart  = getCampaignStartEpoch();
+  const campaignEnd    = campaignStart + CAMPAIGN_TOTAL_DAYS * 24 * 3600 * 1000;
+  const now            = Date.now();
+
+  // Clamp elapsed to [0, totalDuration]
+  const totalDurationMs = campaignEnd - campaignStart;
+  const elapsedMs       = Math.min(Math.max(now - campaignStart, 0), totalDurationMs);
+  const elapsedFraction = elapsedMs / totalDurationMs; // 0 → 1
+
+  // Ghost position: chapters the ghost has completed by now
+  const ghostChaptersFloat = elapsedFraction * CAMPAIGN_CHAPTERS_TOTAL;
+  const ghostProgress      = (ghostChaptersFloat / CAMPAIGN_CHAPTERS_TOTAL) * 100; // 0–100%
+  const actualProgress     = (completedCount / CAMPAIGN_CHAPTERS_TOTAL) * 100;     // 0–100%
+
+  const isAhead     = actualProgress >= ghostProgress;
+  const deltaChaps  = Math.abs(ghostChaptersFloat - completedCount);
+  const deltaPct    = Math.abs(actualProgress - ghostProgress);
+
+  // Daily target: how many chapters must be done before 02:00 AM tonight?
+  // Calculate how many ghost-chapters should be done by tonight's 02:00 AM.
+  const todayStart      = new Date();
+  const sixAMToday      = new Date(todayStart.getFullYear(), todayStart.getMonth(), todayStart.getDate(), 6, 0, 0, 0);
+  if (todayStart < sixAMToday) sixAMToday.setDate(sixAMToday.getDate() - 1);
+  const todayDeadline   = new Date(sixAMToday.getTime() + 24 * 3600 * 1000); // next 06:00 AM → i.e., 2 AM buffer included
+
+  const daysElapsedFull  = (todayDeadline.getTime() - campaignStart) / (24 * 3600 * 1000);
+  const ghostByDeadline  = Math.min(1, daysElapsedFull / CAMPAIGN_TOTAL_DAYS) * CAMPAIGN_CHAPTERS_TOTAL;
+  const chaptersNeededToday = Math.max(0, Math.ceil(ghostByDeadline - completedCount));
+
+  // Days left
+  const daysLeft = Math.max(0, (campaignEnd - now) / (24 * 3600 * 1000));
+
+  return {
+    ghostProgress,      // 0–100 float
+    actualProgress,     // 0–100 float
+    ghostChaptersFloat, // raw ghost chapter count
+    isAhead,
+    deltaChaps,
+    deltaPct,
+    chaptersNeededToday,
+    daysLeft,
+    campaignStart,
+    campaignEnd,
+  };
+}
+
+// ═══════════════════════════════════════════════════════════════════
 // SECTION 2 — PURE HELPERS
 // ═══════════════════════════════════════════════════════════════════
 
@@ -1188,6 +1262,199 @@ function SystemIntegrityBar({ integrity }) {
         />
       </div>
       <span className="font-mono" style={{ color, fontSize: 9 }}>{Math.round(integrity)}% {label}</span>
+    </div>
+  );
+}
+
+// ─── GHOST PACING BAR ─────────────────────────────────────────────
+function GhostPacingBar({ completedCount, systemTheme }) {
+  const [metrics, setMetrics] = useState(() => getGhostMetrics(completedCount));
+
+  // Refresh every 30 seconds so the ghost moves in real-time.
+  useEffect(() => {
+    setMetrics(getGhostMetrics(completedCount));
+    const id = setInterval(() => setMetrics(getGhostMetrics(completedCount)), 30_000);
+    return () => clearInterval(id);
+  }, [completedCount]);
+
+  const {
+    ghostProgress, actualProgress, ghostChaptersFloat,
+    isAhead, deltaChaps, deltaPct,
+    chaptersNeededToday, daysLeft,
+  } = metrics;
+
+  const accentColor  = systemTheme === 'god' ? '#ffd700' : '#00f5ff';
+  const ghostColor   = isAhead ? '#00f5ff' : '#ff2222';
+  const ghostGlow    = isAhead ? '0 0 12px #00f5ff, 0 0 24px #00f5ff88' : '0 0 12px #ff2222, 0 0 24px #ff222288';
+  const statusVerb   = isAhead ? 'AHEAD OF' : 'BEHIND';
+  const statusColor  = isAhead ? '#00ff41' : '#ff3333';
+
+  const barBg        = 'rgba(10,16,28,0.9)';
+  const trackColor   = '#0a1828';
+
+  return (
+    <div style={{
+      background: 'linear-gradient(135deg, rgba(6,10,20,0.97), rgba(4,6,14,0.97))',
+      border: `1px solid ${ghostColor}40`,
+      boxShadow: `0 0 20px ${ghostColor}15`,
+      padding: '16px 20px',
+    }}>
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+        <div className="flex items-center gap-2">
+          <motion.div
+            animate={{ opacity: [1, 0.3, 1] }}
+            transition={{ repeat: Infinity, duration: isAhead ? 2 : 0.7 }}
+          >
+            <Activity size={13} color={ghostColor} />
+          </motion.div>
+          <span className="font-mono text-xs font-black tracking-widest"
+            style={{ color: ghostColor, textShadow: ghostGlow }}>
+            ◈ GHOST PACING — 8-DAY SPRINT
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="font-mono text-xs" style={{ color: 'rgba(100,130,160,0.6)' }}>
+            {daysLeft.toFixed(1)}d remaining
+          </div>
+          <div className="font-mono text-xs font-black px-2 py-0.5"
+            style={{
+              background: `${ghostColor}18`,
+              border: `1px solid ${ghostColor}50`,
+              color: ghostColor,
+            }}>
+            {completedCount}/{CAMPAIGN_CHAPTERS_TOTAL} CHAPTERS
+          </div>
+        </div>
+      </div>
+
+      {/* Dual Progress Bar */}
+      <div className="relative mb-2" style={{ height: 28 }}>
+        {/* Track */}
+        <div className="absolute inset-0 rounded-sm overflow-hidden"
+          style={{ background: trackColor, border: '1px solid rgba(30,50,80,0.5)' }}>
+
+          {/* Actual progress */}
+          <motion.div
+            className="absolute left-0 top-0 h-full"
+            style={{
+              background: systemTheme === 'god'
+                ? 'linear-gradient(90deg, #ffd700, #ffa500)'
+                : 'linear-gradient(90deg, #00ff41, #00f5ff)',
+              boxShadow: systemTheme === 'god'
+                ? '0 0 10px rgba(255,215,0,0.8)'
+                : '0 0 10px rgba(0,255,65,0.7)',
+              zIndex: 2,
+            }}
+            animate={{ width: `${Math.min(actualProgress, 100)}%` }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+          />
+
+          {/* Ghost marker */}
+          <motion.div
+            className="absolute top-0 h-full"
+            style={{
+              width: 3,
+              background: ghostColor,
+              boxShadow: ghostGlow,
+              zIndex: 4,
+            }}
+            animate={{ left: `${Math.min(Math.max(ghostProgress - 0.15, 0), 99.5)}%` }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+          />
+
+          {/* Ghost trail (semi-transparent fill up to ghost) */}
+          <motion.div
+            className="absolute left-0 top-0 h-full"
+            style={{
+              background: `${ghostColor}18`,
+              zIndex: 1,
+              borderRight: `2px solid ${ghostColor}60`,
+            }}
+            animate={{ width: `${Math.min(ghostProgress, 100)}%` }}
+            transition={{ duration: 1, ease: 'easeOut' }}
+          />
+
+          {/* Center label */}
+          <div className="absolute inset-0 flex items-center justify-center" style={{ zIndex: 5 }}>
+            <span className="font-mono font-black"
+              style={{ fontSize: 9, color: '#fff', mixBlendMode: 'difference', letterSpacing: '0.08em' }}>
+              YOU: {Math.round(actualProgress)}% │ GHOST: {Math.round(ghostProgress)}%
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Ghost position tick labels */}
+      <div className="relative mb-3" style={{ height: 12 }}>
+        {/* Your position label */}
+        <motion.div
+          className="absolute font-mono"
+          style={{
+            fontSize: 7,
+            color: systemTheme === 'god' ? '#ffd700' : '#00ff41',
+            transform: 'translateX(-50%)',
+            top: 0,
+            letterSpacing: '0.04em',
+          }}
+          animate={{ left: `${Math.min(Math.max(actualProgress, 2), 96)}%` }}
+          transition={{ duration: 1 }}
+        >▲ YOU</motion.div>
+
+        {/* Ghost label */}
+        <motion.div
+          className="absolute font-mono"
+          style={{
+            fontSize: 7,
+            color: ghostColor,
+            transform: 'translateX(-50%)',
+            top: 0,
+            letterSpacing: '0.04em',
+            textShadow: `0 0 6px ${ghostColor}`,
+          }}
+          animate={{ left: `${Math.min(Math.max(ghostProgress, 5), 93)}%` }}
+          transition={{ duration: 1 }}
+        >👻 GHOST</motion.div>
+      </div>
+
+      {/* Status row */}
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <motion.div
+          animate={!isAhead ? { opacity: [1, 0.5, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 0.9 }}
+          className="font-mono font-black"
+          style={{ color: statusColor, fontSize: 11, textShadow: `0 0 10px ${statusColor}` }}
+        >
+          {isAhead ? '▲' : '▼'} {deltaPct.toFixed(1)}% {statusVerb} THE GHOST
+          <span style={{ color: 'rgba(100,130,160,0.5)', fontWeight: 400 }}>
+            {' '}({deltaChaps.toFixed(1)} chapters)
+          </span>
+        </motion.div>
+
+        {/* Daily target pill */}
+        <motion.div
+          animate={chaptersNeededToday > 0 ? { scale: [1, 1.04, 1] } : {}}
+          transition={{ repeat: Infinity, duration: 1.8 }}
+          className="flex items-center gap-2 px-3 py-1.5 font-mono font-black"
+          style={{
+            background: chaptersNeededToday > 0 ? 'rgba(255,107,0,0.12)' : 'rgba(0,255,65,0.1)',
+            border: `1px solid ${chaptersNeededToday > 0 ? 'rgba(255,107,0,0.5)' : 'rgba(0,255,65,0.4)'}`,
+            color: chaptersNeededToday > 0 ? '#ff6b00' : '#00ff41',
+            fontSize: 10,
+          }}
+        >
+          <Target size={10} />
+          {chaptersNeededToday > 0
+            ? `${chaptersNeededToday} CHAPTER${chaptersNeededToday !== 1 ? 'S' : ''} NEEDED TODAY`
+            : 'ON PACE — NO DEBT TODAY'}
+        </motion.div>
+      </div>
+
+      {/* Ghost pace formula (dim debug line) */}
+      <div className="mt-2 font-mono" style={{ color: 'rgba(50,70,100,0.5)', fontSize: 8 }}>
+        GHOST FORMULA: {ghostChaptersFloat.toFixed(2)} chapters elapsed ÷ {CAMPAIGN_CHAPTERS_TOTAL} total
+        = {ghostProgress.toFixed(1)}% pace │ TARGET: {(CAMPAIGN_CHAPTERS_TOTAL / CAMPAIGN_TOTAL_DAYS).toFixed(2)} ch/day
+      </div>
     </div>
   );
 }
@@ -2863,7 +3130,12 @@ export default function App() {
     100,
     ((totalXP - currentRank.min) / (Math.max(nextRank.min, currentRank.min + 1) - currentRank.min)) * 100
   );
-
+  // ── GHOST PACING METRICS ────────────────────────────────────────
+  // completedChapters.length is the live count; ghost metrics recompute
+  // inside GhostPacingBar on its own 30s interval, but we pass the
+  // count as a prop so any annihilation immediately re-renders it.
+  const ghostMetrics = getGhostMetrics(completedChapters.length);
+  
   const activeMemoryNodes  = [...revisions].sort((a, b) => a.completedAt - b.completedAt);
   const availableChapters  = SYLLABUS[formSubject].filter(
     (ch) => !completedChapters.includes(`${formSubject}::${ch.name}`)
@@ -3507,8 +3779,8 @@ export default function App() {
                   )}
                 </AnimatePresence>
               </section>
-
-              {/* SECTION 2: GLOBAL PROGRESS + RANK */}
+              
+             {/* SECTION 2: GLOBAL PROGRESS + RANK */}
               <section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #00ff41, transparent)' }} />
@@ -3516,7 +3788,7 @@ export default function App() {
                   <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #00ff41, transparent)' }} />
                 </div>
 
-                <div className="p-6" style={{ background: 'linear-gradient(135deg, #061a0f, #050a0e)', border: '1px solid rgba(0,255,65,0.25)' }}>
+                <div className="p-6 mb-4" style={{ background: 'linear-gradient(135deg, #061a0f, #050a0e)', border: '1px solid rgba(0,255,65,0.25)' }}>
                   <div className="grid grid-cols-3 gap-4 mb-6">
                     {[
                       { val: completedChapters.length,                  label: 'ELIMINATED',  color: '#00ff41' },
@@ -3562,6 +3834,12 @@ export default function App() {
                     </div>
                   </div>
                 </div>
+
+                {/* ══ GHOST PACING BAR ══ */}
+                <GhostPacingBar
+                  completedCount={completedChapters.length}
+                  systemTheme={systemTheme}
+                />
               </section>
 
               {/* SECTION 2.5: MEMORY HACK NODES */}
