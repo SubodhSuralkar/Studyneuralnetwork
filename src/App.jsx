@@ -2849,6 +2849,9 @@ export default function App() {
   const [vigilanceMode, setVigilanceMode] = useState(() => LS.get('vigilance_mode', false));
 
   // ── MICRO-MISSION STATE ─────────────────────────────────────────
+  const [showMorningIntro, setShowMorningIntro] = useState(true);
+  const [showDailyReward,  setShowDailyReward]  = useState(false);
+  const day2RewardShownRef = useRef(false);
   const [showMicroMission,     setShowMicroMission]     = useState(false);
   const [microMissionParentId, setMicroMissionParentId] = useState(null);
 
@@ -2898,6 +2901,26 @@ export default function App() {
     LS.set('daily_pyq_day',     getGameDay());
   }, [dailyPyqsSolved]);
 
+const DAY2_CHAPTER_KEYS = EPISODES[1].chapters.map(c => `${c.subject}::${c.name}`);
+useEffect(() => {
+  if (day2RewardShownRef.current) return;
+  const allDone = DAY2_CHAPTER_KEYS.every(k => completedChapters.includes(k));
+  if (!allDone) return;
+  const now = new Date();
+  const isDay2 = now.getFullYear() === 2026
+              && now.getMonth()    === 4
+              && now.getDate()     === 2;
+  // Safety: also fires if it's past midnight (hours 0-5 still count as Day 2)
+  const isDay2Night = now.getFullYear() === 2026
+                   && now.getMonth()    === 4
+                   && now.getDate()     === 3
+                   && now.getHours()    < 6;
+  if (!isDay2 && !isDay2Night) return;
+  day2RewardShownRef.current = true;
+  playVictoryOST();
+  setTimeout(() => setShowDailyReward(true), 1800);
+}, [completedChapters]);
+  
   // ── 6 AM DAILY RESET ────────────────────────────────────────────
   useEffect(() => {
     let lastKnownDay = getGameDay();
@@ -3374,6 +3397,8 @@ export default function App() {
     LS.remove(`solved_${task.id}`);
     LS.remove(`time_spent_${task.id}`);
 
+   playChapterCompleteStingAudio();
+
     if (systemTheme === 'god') {
       fireGodModeConfetti();
     } else if (isInPowerHour) {
@@ -3431,6 +3456,12 @@ export default function App() {
       </AnimatePresence>
 
       <AnimatePresence>
+  {showMorningIntro && appReady && (
+    <MorningIntro onDismiss={() => setShowMorningIntro(false)} />
+  )}
+</AnimatePresence>
+
+      <AnimatePresence>
         {appReady && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -3441,6 +3472,7 @@ export default function App() {
           >
             <style>{`
               ${glitchCSS}
+              ${NARRATIVE_CSS}
               ${systemTheme === 'god' ? `
                 body::before {
                   content: '';
@@ -3543,6 +3575,12 @@ export default function App() {
               )}
             </AnimatePresence>
 
+<AnimatePresence>
+  {showDailyReward && (
+    <DailyReward onClose={() => setShowDailyReward(false)} />
+  )}
+</AnimatePresence>
+            
             {/* War Archive Modal */}
             <AnimatePresence>
               {showArchiveModal && (
@@ -3988,14 +4026,14 @@ export default function App() {
                   {EPISODES.map((episode) => {
                     const isLocked = !getEpisodeUnlocked(episode.id);
                     return (
-                      <EpisodeCard
-                        key={episode.id}
-                        episode={episode}
-                        isLocked={isLocked}
-                        completedChapters={completedChapters}
-                        onDeployChapter={handleDeployFromEpisode}
-                        deployedNames={deployedMissionRefs}
-                      />
+                     <EpisodeCardV2
+  key={episode.id}
+  episode={episode}
+  isLocked={isLocked}
+  completedChapters={completedChapters}
+  onDeployChapter={handleDeployFromEpisode}
+  deployedNames={deployedMissionRefs}
+/>
                     );
                   })}
                 </div>
