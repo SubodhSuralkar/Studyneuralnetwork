@@ -2716,6 +2716,317 @@ function WarArchiveModal({ archives, onClose, totalXP, rankName, onDownloadPDF }
   );
 }
 
+// ── NARRATIVE NEXUS: Component Definitions ──────────────────────
+
+const NARRATIVE_CSS = `
+  @keyframes glitch-base {
+    0%,100% { transform: translate(0,0); }
+    8%  { transform: translate(-2px,0); }
+    16% { transform: translate(2px,0); }
+    24% { transform: translate(0,1px); }
+    32% { transform: translate(-1px,-1px); }
+    40% { transform: translate(0,0); }
+  }
+  @keyframes glitch-rgb-r {
+    0%,100% { clip-path: inset(0 0 98% 0); transform: translate(-3px,0); color:#ff2222; }
+    20% { clip-path: inset(40% 0 30% 0); transform: translate(3px,0); }
+    40% { clip-path: inset(80% 0 5%  0); transform: translate(-2px,1px); }
+    60% { clip-path: inset(10% 0 70% 0); transform: translate(1px,0); }
+    80% { clip-path: inset(60% 0 20% 0); transform: translate(-1px,-1px); }
+  }
+  @keyframes glitch-rgb-b {
+    0%,100% { clip-path: inset(0 0 98% 0); transform: translate(3px,0); color:#00f5ff; }
+    20% { clip-path: inset(60% 0 10% 0); transform: translate(-3px,0); }
+    40% { clip-path: inset(20% 0 60% 0); transform: translate(2px,-1px); }
+    60% { clip-path: inset(80% 0 5%  0); transform: translate(-1px,0); }
+    80% { clip-path: inset(5%  0 80% 0); transform: translate(1px,1px); }
+  }
+  .glitch-word { position:relative; display:inline-block; animation:glitch-base 2.4s ease-in-out infinite; }
+  .glitch-word::before { content:attr(data-text); position:absolute; left:0; top:0; width:100%; animation:glitch-rgb-r 2.4s ease-in-out infinite; opacity:0.7; }
+  .glitch-word::after  { content:attr(data-text); position:absolute; left:0; top:0; width:100%; animation:glitch-rgb-b 2.4s ease-in-out infinite; opacity:0.7; }
+  @keyframes intro-scan { 0% { top:-4px; } 100% { top:100%; } }
+  .intro-scanline::after { content:''; position:absolute; left:0; right:0; height:4px; background:linear-gradient(180deg,rgba(0,245,255,0.18),transparent); animation:intro-scan 2.8s linear infinite; pointer-events:none; z-index:2; }
+  .glass-reward { background:rgba(5,18,30,0.72); backdrop-filter:blur(24px) saturate(1.4); -webkit-backdrop-filter:blur(24px) saturate(1.4); border:1.5px solid rgba(0,245,255,0.55); box-shadow:0 0 32px rgba(0,245,255,0.25),0 0 80px rgba(0,245,255,0.10),inset 0 0 40px rgba(0,245,255,0.04); }
+  @keyframes lock-shimmer { 0% { background-position:-200% center; } 100% { background-position:200% center; } }
+  .chapter-locked { filter:grayscale(1) brightness(0.45); pointer-events:none; user-select:none; position:relative; overflow:hidden; }
+  .chapter-locked::after { content:''; position:absolute; inset:0; background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,0.06) 50%,transparent 60%); background-size:200% 100%; animation:lock-shimmer 3s linear infinite; pointer-events:none; }
+  @keyframes victory-ring { 0% { box-shadow:0 0 0 0 rgba(0,255,65,0.6); } 70% { box-shadow:0 0 0 24px rgba(0,255,65,0); } 100% { box-shadow:0 0 0 0 rgba(0,255,65,0); } }
+  .victory-ring { animation:victory-ring 1.2s ease-out 3; }
+`;
+
+function playChapterCompleteStingAudio() {
+  try {
+    const audio = new Audio('/chapter-complete.mp3');
+    audio.volume = 0.65;
+    audio.play().catch(() => {});
+  } catch {}
+}
+
+function playVictoryOST() {
+  try {
+    const audio = new Audio('/victory.mp3');
+    audio.volume = 0.55;
+    audio.play().catch(() => {});
+    setTimeout(() => {
+      const faderId = setInterval(() => {
+        audio.volume = Math.max(0, audio.volume - 0.05);
+        if (audio.volume <= 0) { audio.pause(); clearInterval(faderId); }
+      }, 100);
+    }, 27000);
+    setTimeout(() => audio.pause(), 30000);
+  } catch {}
+}
+
+function isChapterSequentiallyUnlocked(episode, chapterIndex, completedChapters) {
+  if (chapterIndex === 0) return true;
+  const prev = episode.chapters[chapterIndex - 1];
+  return completedChapters.includes(`${prev.subject}::${prev.name}`);
+}
+
+function MorningIntro({ onDismiss }) {
+  const DAY2_KEY = 'morning_intro_viewed_2026-05-02';
+  const [visible, setVisible]   = useState(false);
+  const [phase,   setPhase]     = useState('boot');
+  const [line,    setLine]      = useState(0);
+  const audioRef  = useRef(null);
+  const LINES = [
+    'NEURAL LINK ESTABLISHED...',
+    'DAY  02 / 08',
+    'MISSION: THERMODYNAMIC RECKONING',
+  ];
+
+  useEffect(() => {
+    const now = new Date();
+    const isDay2 = now.getFullYear() === 2026 && now.getMonth() === 4 && now.getDate() === 2 && now.getHours() >= 6;
+    const isDay2Night = now.getFullYear() === 2026 && now.getMonth() === 4 && now.getDate() === 3 && now.getHours() < 6;
+    const alreadySeen = localStorage.getItem(DAY2_KEY) === 'true';
+    if ((isDay2 || isDay2Night) && !alreadySeen) setVisible(true);
+  }, []);
+
+  useEffect(() => {
+    if (!visible) return;
+    try {
+      const audio = new Audio('/intro-theme.mp3');
+      audio.volume = 0.55;
+      audio.play().catch(() => {});
+      audioRef.current = audio;
+    } catch {}
+    const bootTimer = setTimeout(() => {
+      setPhase('lines');
+      let idx = 0;
+      const advance = () => {
+        idx++;
+        setLine(idx);
+        if (idx < LINES.length - 1) setTimeout(advance, 1100);
+        else setTimeout(() => setPhase('button'), 1400);
+      };
+      setTimeout(advance, 900);
+    }, 600);
+    return () => {
+      clearTimeout(bootTimer);
+      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    };
+  }, [visible]);
+
+  const handleDismiss = () => {
+    localStorage.setItem(DAY2_KEY, 'true');
+    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+    setVisible(false);
+    onDismiss?.();
+  };
+
+  if (!visible) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="fixed inset-0 z-[99999] flex flex-col items-center justify-center intro-scanline"
+      style={{ background: '#000', overflow: 'hidden' }}
+    >
+      <div className="absolute inset-0 pointer-events-none" style={{
+        backgroundImage: 'linear-gradient(rgba(0,245,255,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(0,245,255,0.03) 1px,transparent 1px)',
+        backgroundSize: '60px 60px',
+      }} />
+      <div className="absolute inset-0 pointer-events-none" style={{
+        background: 'radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.75) 100%)',
+      }} />
+      <motion.div
+        initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+        className="absolute top-10 left-1/2 -translate-x-1/2 font-mono text-center"
+        style={{ color: 'rgba(255,0,255,0.6)', fontSize: 10, letterSpacing: '0.35em' }}
+      >
+        NEURAL-WARFARE: SEASON 1 &nbsp;•&nbsp; EPISODE 02 — THE HEAT PROTOCOL
+      </motion.div>
+      <div className="relative z-10 text-center space-y-6 px-8">
+        {LINES.map((txt, i) => (
+          <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: line >= i ? 1 : 0, y: line >= i ? 0 : 8 }} transition={{ duration: 0.6 }}>
+            {i === 1 ? (
+              <div className="glitch-word font-mono font-black" data-text={txt}
+                style={{ fontSize: 'clamp(42px,10vw,80px)', color: '#00f5ff', textShadow: '0 0 30px #00f5ff,0 0 80px rgba(0,245,255,0.4)', letterSpacing: '0.12em' }}
+              >{txt}</div>
+            ) : i === 2 ? (
+              <div className="glitch-word font-mono font-black" data-text={txt}
+                style={{ fontSize: 'clamp(16px,3.5vw,28px)', color: '#ff00ff', textShadow: '0 0 18px #ff00ff', letterSpacing: '0.15em' }}
+              >{txt}</div>
+            ) : (
+              <div className="font-mono" style={{ fontSize: 13, color: '#00ff41', textShadow: '0 0 10px #00ff41', letterSpacing: '0.25em' }}>{txt}</div>
+            )}
+          </motion.div>
+        ))}
+      </div>
+      <AnimatePresence>
+        {phase === 'button' && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.85, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0 }} transition={{ type: 'spring', damping: 18 }}
+            className="mt-14 relative z-10"
+          >
+            <motion.button
+              onClick={handleDismiss}
+              whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.94 }}
+              animate={{ boxShadow: ['0 0 16px rgba(0,245,255,0.3)','0 0 32px rgba(0,245,255,0.7)','0 0 16px rgba(0,245,255,0.3)'] }}
+              transition={{ repeat: Infinity, duration: 2 }}
+              className="px-12 py-5 font-mono font-black tracking-widest text-sm"
+              style={{ background: 'rgba(0,245,255,0.1)', border: '2px solid #00f5ff', color: '#00f5ff', letterSpacing: '0.2em' }}
+            >⚡ SYNC NEURAL LINK</motion.button>
+            <p className="font-mono text-center mt-3" style={{ color: 'rgba(0,245,255,0.3)', fontSize: 9, letterSpacing: '0.3em' }}>
+              DISMISS TO BEGIN DAY 02 OPERATIONS
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+      {[{style:{top:16,left:16}},{style:{top:16,right:16,transform:'scaleX(-1)'}},{style:{bottom:16,left:16,transform:'scaleY(-1)'}},{style:{bottom:16,right:16,transform:'scale(-1,-1)'}}].map((props,i) => (
+        <svg key={i} width="40" height="40" viewBox="0 0 40 40" fill="none" className="absolute pointer-events-none" style={{...props.style,opacity:0.5}}>
+          <path d="M0 40 L0 0 L40 0" stroke="#00f5ff" strokeWidth="1.5"/>
+        </svg>
+      ))}
+    </motion.div>
+  );
+}
+
+function DailyReward({ onClose }) {
+  const LORE = `Sector 2 Secured. The Ghost's thermal signature is fading.\n\nYour cognitive output has exceeded baseline parameters.\n\nRest now, Pilot. Tomorrow, the Equilibrium awaits.`;
+  return (
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[99990] flex items-center justify-center p-6"
+      style={{ background: 'rgba(0,5,12,0.88)', backdropFilter: 'blur(6px)' }}
+    >
+      <motion.div
+        initial={{ scale: 0.82, y: 40 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.82, y: 40 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 260 }}
+        className="glass-reward relative flex flex-col items-center text-center"
+        style={{ maxWidth: 480, width: '100%', padding: '44px 36px 36px', borderRadius: 2 }}
+      >
+        {[{top:0,left:0},{top:0,right:0,transform:'scaleX(-1)'},{bottom:0,left:0,transform:'scaleY(-1)'},{bottom:0,right:0,transform:'scale(-1,-1)'}].map((s,i) => (
+          <svg key={i} width="24" height="24" viewBox="0 0 24 24" fill="none" style={{position:'absolute',opacity:0.7,...s}}>
+            <path d="M0 24 L0 0 L24 0" stroke="#00f5ff" strokeWidth="1.5"/>
+          </svg>
+        ))}
+        <motion.div className="w-full mb-6 overflow-hidden" style={{ border:'1px solid rgba(0,245,255,0.35)', boxShadow:'0 0 24px rgba(0,245,255,0.2)', maxHeight:200 }}
+          initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+        >
+          <img src="/day-2-reward.jpg" alt="Day 2 Reward" style={{ width:'100%', objectFit:'cover', display:'block' }} onError={(e) => { e.currentTarget.style.display='none'; }} />
+        </motion.div>
+        <motion.div initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.35 }}
+          className="font-mono text-xs tracking-widest mb-3 px-4 py-1.5"
+          style={{ background:'rgba(0,245,255,0.08)', border:'1px solid rgba(0,245,255,0.4)', color:'#00f5ff', textShadow:'0 0 10px #00f5ff' }}
+        >✦ DAY 02 COMPLETE — SECTOR 2 SECURED ✦</motion.div>
+        <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
+          className="font-mono text-sm leading-relaxed mb-8"
+          style={{ color:'rgba(180,210,230,0.85)', whiteSpace:'pre-line', lineHeight:1.8 }}
+        >{LORE}</motion.p>
+        <motion.button whileHover={{ scale:1.04 }} whileTap={{ scale:0.94 }} onClick={onClose}
+          animate={{ boxShadow:['0 0 12px rgba(0,245,255,0.3)','0 0 28px rgba(0,245,255,0.6)','0 0 12px rgba(0,245,255,0.3)'] }}
+          transition={{ repeat:Infinity, duration:2 }}
+          className="px-10 py-3 font-mono font-black tracking-widest text-sm victory-ring"
+          style={{ background:'rgba(0,245,255,0.1)', border:'1.5px solid #00f5ff', color:'#00f5ff', letterSpacing:'0.18em' }}
+        >REST, PILOT — SEE YOU ON DAY 03</motion.button>
+      </motion.div>
+    </motion.div>
+  );
+}
+
+function EpisodeCardV2({ episode, isLocked, completedChapters, onDeployChapter, deployedNames }) {
+  const episodeChapterKeys = episode.chapters.map(c => `${c.subject}::${c.name}`);
+  const completedInEpisode = episodeChapterKeys.filter(k => completedChapters.includes(k)).length;
+  const totalInEpisode     = episode.chapters.length;
+  const isComplete         = completedInEpisode === totalInEpisode;
+  const pct                = (completedInEpisode / totalInEpisode) * 100;
+
+  return (
+    <motion.div layout initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} className="relative overflow-hidden"
+      style={{
+        background: isLocked ? 'linear-gradient(135deg,rgba(10,10,16,0.95),rgba(5,5,10,0.95))' : 'linear-gradient(135deg,rgba(10,18,30,0.95),rgba(6,10,18,0.95))',
+        border: isLocked ? '1px solid rgba(50,50,70,0.4)' : `1px solid ${episode.color}40`,
+        boxShadow: isComplete ? `0 0 20px ${episode.color}30` : 'none',
+        filter: isLocked ? 'blur(1px)' : 'none',
+      }}
+    >
+      {isLocked && (
+        <div className="absolute inset-0 z-10 flex flex-col items-center justify-center" style={{ background:'rgba(5,5,12,0.7)', backdropFilter:'blur(3px)' }}>
+          <Lock size={22} style={{ color:'rgba(100,100,140,0.6)' }} />
+          <div className="font-mono text-xs text-gray-700 mt-2 tracking-widest">LOCKED</div>
+          <div className="font-mono text-gray-800 mt-0.5" style={{ fontSize:9 }}>Complete Ep {episode.id - 1} to unlock</div>
+        </div>
+      )}
+      <div className="px-4 pt-4 pb-3" style={{ borderBottom:`1px solid ${episode.color}20` }}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <div className="font-mono font-black" style={{ color:episode.color, fontSize:9 }}>EPISODE {episode.id}</div>
+            <div className="font-mono text-gray-700" style={{ fontSize:9 }}>{episode.subtitle}</div>
+          </div>
+          {isComplete && (
+            <motion.div animate={{ scale:[1,1.2,1] }} transition={{ repeat:Infinity, duration:2 }}>
+              <CheckCircle size={14} style={{ color:episode.color }} />
+            </motion.div>
+          )}
+        </div>
+        <div className="font-mono text-sm font-black" style={{ color: isLocked ? 'rgba(80,80,100,0.5)' : episode.color, textShadow: isLocked ? 'none' : `0 0 10px ${episode.color}60` }}>{episode.title}</div>
+        <div className="mt-2 flex items-center gap-2">
+          <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background:'#0a1020' }}>
+            <motion.div className="h-full rounded-full" style={{ background:episode.color, boxShadow:`0 0 4px ${episode.color}` }} animate={{ width:`${pct}%` }} transition={{ duration:0.8 }} />
+          </div>
+          <span className="font-mono" style={{ color:episode.color, fontSize:9 }}>{completedInEpisode}/{totalInEpisode}</span>
+        </div>
+      </div>
+      <div className="px-3 py-2 space-y-1">
+        {episode.chapters.map((ch, idx) => {
+          const key          = `${ch.subject}::${ch.name}`;
+          const isCompleted  = completedChapters.includes(key);
+          const seqUnlocked  = isChapterSequentiallyUnlocked(episode, idx, completedChapters);
+          const isDeployed   = deployedNames.some(d => d.subject === ch.subject && d.name === ch.name);
+          const sc           = SUBJECT_CONFIG[ch.subject];
+          const dc           = DIFF_CONFIG[SYLLABUS[ch.subject]?.find(s => s.name === ch.name)?.diff || 'M'];
+          const SubIcon      = sc?.icon || BookOpen;
+          const visuallyLocked = isLocked || (!isCompleted && !seqUnlocked);
+          return (
+            <motion.div key={ch.name} initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:idx*0.05 }}
+              className={`flex items-center gap-2 py-1.5 px-2 rounded relative ${visuallyLocked ? 'chapter-locked' : ''}`}
+              style={{ background: isCompleted ? 'rgba(0,0,0,0.3)' : 'transparent' }}
+            >
+              {isCompleted ? <CheckCircle size={11} style={{ color:'#00ff41', flexShrink:0 }} />
+               : visuallyLocked ? <Lock size={11} style={{ color:'rgba(120,120,160,0.5)', flexShrink:0 }} />
+               : <div style={{ width:11, height:11, flexShrink:0, border:`1px solid ${dc.color}`, borderRadius:'50%' }} />}
+              <SubIcon size={10} style={{ color:sc?.color, flexShrink:0 }} />
+              <span className="text-xs flex-1 font-mono" style={{ color: isCompleted ? '#3a5060' : visuallyLocked ? '#2a3040' : '#c0d8f0', textDecoration: isCompleted ? 'line-through' : 'none', textDecorationColor:'#ff00ff' }}>{ch.name}</span>
+              <span className="font-mono" style={{ color:sc?.color, fontSize:8 }}>{ch.subject.slice(0,3).toUpperCase()}</span>
+              {!isCompleted && !isDeployed && !isLocked && seqUnlocked && (
+                <motion.button whileTap={{ scale:0.88 }} onClick={() => onDeployChapter(ch)}
+                  className="px-1.5 py-0.5 font-mono font-black"
+                  style={{ background:`${episode.color}18`, border:`1px solid ${episode.color}60`, color:episode.color, fontSize:8 }}
+                >+ADD</motion.button>
+              )}
+              {isDeployed && !isCompleted && <span className="font-mono" style={{ color:'#4a8060', fontSize:8 }}>QUEUED</span>}
+            </motion.div>
+          );
+        })}
+      </div>
+    </motion.div>
+  );
+}
+
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 6 — MAIN APP
 // ═══════════════════════════════════════════════════════════════════
