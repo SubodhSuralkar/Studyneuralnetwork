@@ -2766,7 +2766,7 @@ function playChapterCompleteStingAudio() {
 
 function playVictoryOST() {
   try {
-    const audio = new Audio('/victory.mp3');
+    const audio = new Audio('/dramatic-ending.mp3');
     audio.volume = 0.55;
     audio.play().catch(() => {});
     setTimeout(() => {
