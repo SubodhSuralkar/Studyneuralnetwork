@@ -142,8 +142,8 @@ const CLIFFHANGER_EVENTS = [
   },
 ];
 
-// ── LS HELPER (local, doesn't depend on App.jsx's LS) ────────────────
-const LS = {
+// ── SIEGE LS HELPER (intentionally named differently to avoid collision) ──
+const SiegeLS = {
   get: (k, d) => { try { const r = localStorage.getItem(k); return r !== null ? JSON.parse(r) : d; } catch { return d; } },
   set: (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch {} },
 };
@@ -159,16 +159,16 @@ export function useBossModeTheme(completedCount) {
       // Check if it was just crossed
       if (prevCountRef.current < BOSS_CHAPTER_THRESHOLD) {
         setIsBossMode(true);
-        LS.set('boss_mode_active', true);
+       SiegeLS.set('boss_mode_active', true);
       } else {
         // Already past threshold — restore from storage
-        setIsBossMode(LS.get('boss_mode_active', false));
+        setIsBossMode(SiegeLS.get('boss_mode_active', false));
       }
     }
     // Reset if somehow below threshold (e.g., dev testing)
     if (completedCount < BOSS_CHAPTER_THRESHOLD) {
       setIsBossMode(false);
-      LS.set('boss_mode_active', false);
+     SiegeLS.set('boss_mode_active', false);
     }
     prevCountRef.current = completedCount;
   }, [completedCount]);
@@ -183,7 +183,7 @@ export function useBossModeTheme(completedCount) {
 
 // ── PILLAR 2 HOOK — Resonance Engine ─────────────────────────────────
 function useResonanceEngine(audioUnlocked, isBossMode) {
-  const [resonanceLevel, setResonanceLevel] = useState(() => LS.get('resonanceLevel', 0));
+  const [resonanceLevel, setResonanceLevel] = useState(() => SiegeLS.get('resonanceLevel', 0));
   const [activeBuffs, setActiveBuffs]       = useState([]);
   const [isVisible, setIsVisible]           = useState(!document.hidden);
 
@@ -192,7 +192,7 @@ function useResonanceEngine(audioUnlocked, isBossMode) {
   // Stagnation decay tick
   const decayRef = useRef(null);
   // Cliffhanger tracking
-  const lastCliffhangerRef = useRef(LS.get('last_cliffhanger_epoch', Date.now()));
+  const lastCliffhangerRef = useRef(SiegeLS.get('last_cliffhanger_epoch', Date.now()));
   const [pendingCliffhanger, setPendingCliffhanger] = useState(null);
 
   // Audio refs
@@ -217,7 +217,7 @@ function useResonanceEngine(audioUnlocked, isBossMode) {
     const onBlur = () => {
       setResonanceLevel(prev => {
         const next = Math.max(0, prev - RESONANCE_DECAY_BLUR_AMOUNT);
-        LS.set('resonanceLevel', next);
+        SiegeLS.set('resonanceLevel', next);
         return next;
       });
     };
@@ -233,13 +233,13 @@ function useResonanceEngine(audioUnlocked, isBossMode) {
     gainRef.current = setInterval(() => {
       setResonanceLevel(prev => {
         const next = Math.min(100, prev + RESONANCE_GAIN_AMOUNT);
-        LS.set('resonanceLevel', next);
+        SiegeLS.set('resonanceLevel', next);
 
         // Check cliffhanger trigger
         const now = Date.now();
         if (now - lastCliffhangerRef.current >= CLIFFHANGER_INTERVAL_MS) {
           lastCliffhangerRef.current = now;
-          LS.set('last_cliffhanger_epoch', now);
+          SiegeLS.set('last_cliffhanger_epoch', now);
           // Pick a random event
           const event = CLIFFHANGER_EVENTS[Math.floor(Math.random() * CLIFFHANGER_EVENTS.length)];
           setPendingCliffhanger(event);
@@ -258,7 +258,7 @@ function useResonanceEngine(audioUnlocked, isBossMode) {
       setResonanceLevel(prev => {
         if (prev <= 0) return prev;
         const next = Math.max(0, prev - RESONANCE_PASSIVE_DECAY_AMT);
-        LS.set('resonanceLevel', next);
+        SiegeLS.set('resonanceLevel', next);
         return next;
       });
     }, RESONANCE_PASSIVE_DECAY_MS);
@@ -348,7 +348,7 @@ function useResonanceEngine(audioUnlocked, isBossMode) {
   const applyManualDecay = useCallback((amount = 10) => {
     setResonanceLevel(prev => {
       const next = Math.max(0, prev - amount);
-      LS.set('resonanceLevel', next);
+      SiegeLS.set('resonanceLevel', next);
       return next;
     });
   }, []);
@@ -977,7 +977,7 @@ export default function ResonanceSiege({
     // Apply buff
     addBuff(choice.buff);
     // Persist last choice
-    LS.set('last_choice_made', {
+    SiegeLS.set('last_choice_made', {
       choiceId: choice.id,
       eventId: pendingCliffhanger?.id,
       epoch: Date.now(),
