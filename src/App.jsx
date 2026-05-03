@@ -177,6 +177,38 @@ const LEVEL_THRESHOLDS = [
   1670000, 1940000, 2240000, 2570000, 9999999,
 ];
 
+// ── CAMPAIGN DATE SYSTEM ─────────────────────────────────────────────
+const CAMPAIGN_START_DATE = new Date(2026, 4, 1, 6, 0, 0, 0); // May 1 2026 06:00 AM
+
+function getCampaignCurrentDay() {
+  const now = new Date();
+  const diffMs = now - CAMPAIGN_START_DATE;
+  if (diffMs < 0) return 0; // before campaign
+  return Math.min(8, Math.floor(diffMs / (1000 * 60 * 60 * 24)) + 1);
+}
+
+function getTodayDateString() {
+  // Returns 'YYYY-MM-DD' for the current game day (resets at 06:00 AM)
+  const now = new Date();
+  if (now.getHours() < 6) {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    return yesterday.toISOString().slice(0, 10);
+  }
+  return now.toISOString().slice(0, 10);
+}
+
+function getDailyChapterGoal(currentDay) {
+  // Distribute 17 remaining chapters across 8 days (from campaign day 1)
+  const remaining = CAMPAIGN_CHAPTERS_TOTAL - CAMPAIGN_COMPLETED_BASE;
+  return Math.ceil(remaining / CAMPAIGN_TOTAL_DAYS);
+}
+
+// Audio context — unlocked on first user gesture
+let _audioUnlocked = false;
+function markAudioUnlocked() { _audioUnlocked = true; }
+function isAudioUnlocked()   { return _audioUnlocked; }
+
 const BOOT_LINES = [
   'System waking...',
   'Neural Link Syncing...',
@@ -2757,11 +2789,17 @@ const NARRATIVE_CSS = `
 `;
 
 function playChapterCompleteStingAudio() {
+  if (!isAudioUnlocked()) return; // browser block guard
   try {
     const audio = new Audio('/chapter-complete.mp3');
     audio.volume = 0.65;
     audio.play().catch(() => {});
   } catch {}
+}
+
+function playVictoryOSTSafe() {
+  if (!isAudioUnlocked()) return;
+  playVictoryOST();
 }
 
 function playVictoryOST() {
@@ -2785,34 +2823,48 @@ function isChapterSequentiallyUnlocked(episode, chapterIndex, completedChapters)
   return completedChapters.includes(`${prev.subject}::${prev.name}`);
 }
 
-function MorningIntro({ onDismiss }) {
-  const DAY2_KEY = 'morning_intro_viewed_2026-05-02';
-  const [visible, setVisible]   = useState(false);
-  const [phase,   setPhase]     = useState('boot');
-  const [line,    setLine]      = useState(0);
+function MorningIntro({ onDismiss, onAudioUnlock }) {
+  const currentDay = getCampaignCurrentDay();
+  const todayStr   = getTodayDateString();
+
+  // ── VISIBILITY LOGIC ────────────────────────────────────────────
+  // Show if: campaign is active (day 1-8) AND after 06:00 AND not yet seen today
+  const [visible, setVisible] = useState(() => {
+    if (currentDay < 1 || currentDay > 8) return false;
+    const now = new Date();
+    if (now.getHours() < 6) return false;
+    const lastSeen = localStorage.getItem('morning_intro_last_date');
+    return lastSeen !== todayStr;
+  });
+
+  const [phase,   setPhase]   = useState('boot');
+  const [line,    setLine]    = useState(0);
   const audioRef  = useRef(null);
+
+  // ── DYNAMIC EPISODE DATA PER DAY ────────────────────────────────
+  const DAY_META = {
+    1: { season: 1, ep: 1, epTitle: 'THE ATOMIC AWAKENING',   subtitle: 'Season Premiere'     },
+    2: { season: 1, ep: 2, epTitle: 'THERMODYNAMIC RECKONING', subtitle: 'The Heat Protocol'  },
+    3: { season: 1, ep: 3, epTitle: 'EQUILIBRIUM & CHAOS',     subtitle: 'The Balance Breaks' },
+    4: { season: 1, ep: 4, epTitle: 'ELECTROCHEMICAL STORM',   subtitle: 'Current Wars'       },
+    5: { season: 1, ep: 5, epTitle: 'DERIVATIVES OF DESTRUCTION', subtitle: 'Calculus Apocalypse' },
+    6: { season: 1, ep: 6, epTitle: 'ORGANIC UPRISING',        subtitle: 'Carbon Strikes Back' },
+    7: { season: 1, ep: 7, epTitle: 'THE FINAL NEXUS',         subtitle: 'Season Finale'      },
+    8: { season: 1, ep: 8, epTitle: 'ASCENSION PROTOCOL',      subtitle: 'The Ghost Awaits'   },
+  };
+
+  const meta = DAY_META[currentDay] || DAY_META[1];
+
   const LINES = [
     'NEURAL LINK ESTABLISHED...',
-    'DAY  02 / 08',
-    'MISSION: THERMODYNAMIC RECKONING',
+    `DAY  ${String(currentDay).padStart(2,'0')} / 08`,
+    `MISSION: ${meta.epTitle}`,
   ];
 
   useEffect(() => {
-    const now = new Date();
-    const isDay2 = now.getFullYear() === 2026 && now.getMonth() === 4 && now.getDate() === 2 && now.getHours() >= 6;
-    const isDay2Night = now.getFullYear() === 2026 && now.getMonth() === 4 && now.getDate() === 3 && now.getHours() < 6;
-    const alreadySeen = localStorage.getItem(DAY2_KEY) === 'true';
-    if ((isDay2 || isDay2Night) && !alreadySeen) setVisible(true);
-  }, []);
-
-  useEffect(() => {
     if (!visible) return;
-    try {
-      const audio = new Audio('/intro-theme.mp3');
-      audio.volume = 0.55;
-      audio.play().catch(() => {});
-      audioRef.current = audio;
-    } catch {}
+    // NOTE: Audio is intentionally NOT started here — browser blocks autoplay.
+    // It starts inside handleSync() on the button click below.
     const bootTimer = setTimeout(() => {
       setPhase('lines');
       let idx = 0;
@@ -2830,9 +2882,40 @@ function MorningIntro({ onDismiss }) {
     };
   }, [visible]);
 
-  const handleDismiss = () => {
-    localStorage.setItem(DAY2_KEY, 'true');
-    if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+  // ── SYNC BUTTON CLICK — audio starts here to bypass browser block ──
+  const handleSync = () => {
+    // Start intro audio NOW (user gesture unlocks autoplay)
+    try {
+      const audio = new Audio('/intro-theme.mp3');
+      audio.volume = 0.55;
+      audio.play().catch(() => {});
+      audioRef.current = audio;
+      // Fade out after 28s
+      setTimeout(() => {
+        const faderId = setInterval(() => {
+          if (!audioRef.current) { clearInterval(faderId); return; }
+          audioRef.current.volume = Math.max(0, audioRef.current.volume - 0.05);
+          if (audioRef.current.volume <= 0) {
+            audioRef.current.pause();
+            clearInterval(faderId);
+          }
+        }, 120);
+      }, 28000);
+    } catch {}
+
+    // Mark audio as globally unlocked for the session
+    markAudioUnlocked();
+    if (onAudioUnlock) onAudioUnlock();
+
+    // Persist — won't show again today
+    localStorage.setItem('morning_intro_last_date', todayStr);
+
+    // Cleanup and dismiss
+    if (audioRef.current) {
+      setTimeout(() => {
+        if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+      }, 200);
+    }
     setVisible(false);
     onDismiss?.();
   };
@@ -2853,23 +2936,44 @@ function MorningIntro({ onDismiss }) {
       <div className="absolute inset-0 pointer-events-none" style={{
         background: 'radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,0.75) 100%)',
       }} />
+
+      {/* Episode tag */}
       <motion.div
         initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
         className="absolute top-10 left-1/2 -translate-x-1/2 font-mono text-center"
-        style={{ color: 'rgba(255,0,255,0.6)', fontSize: 10, letterSpacing: '0.35em' }}
+        style={{ color: 'rgba(255,0,255,0.6)', fontSize: 10, letterSpacing: '0.35em', whiteSpace: 'nowrap' }}
       >
-        NEURAL-WARFARE: SEASON 1 &nbsp;•&nbsp; EPISODE 02 — THE HEAT PROTOCOL
+        NEURAL-WARFARE: SEASON {meta.season} &nbsp;•&nbsp; EPISODE {String(meta.ep).padStart(2,'0')} — {meta.subtitle.toUpperCase()}
       </motion.div>
+
+      {/* Day counter top-right */}
+      <motion.div
+        initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}
+        className="absolute top-10 right-8 font-mono text-right"
+        style={{ color: 'rgba(0,255,65,0.5)', fontSize: 9, letterSpacing: '0.2em' }}
+      >
+        CAMPAIGN DAY<br />
+        <span style={{ fontSize: 24, fontWeight: 900, color: '#00ff41', textShadow: '0 0 12px #00ff41' }}>
+          {currentDay}
+        </span>
+        <span style={{ fontSize: 11, color: 'rgba(0,255,65,0.4)' }}> / 8</span>
+      </motion.div>
+
       <div className="relative z-10 text-center space-y-6 px-8">
         {LINES.map((txt, i) => (
-          <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: line >= i ? 1 : 0, y: line >= i ? 0 : 8 }} transition={{ duration: 0.6 }}>
+          <motion.div
+            key={i}
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: line >= i ? 1 : 0, y: line >= i ? 0 : 8 }}
+            transition={{ duration: 0.6 }}
+          >
             {i === 1 ? (
               <div className="glitch-word font-mono font-black" data-text={txt}
                 style={{ fontSize: 'clamp(42px,10vw,80px)', color: '#00f5ff', textShadow: '0 0 30px #00f5ff,0 0 80px rgba(0,245,255,0.4)', letterSpacing: '0.12em' }}
               >{txt}</div>
             ) : i === 2 ? (
               <div className="glitch-word font-mono font-black" data-text={txt}
-                style={{ fontSize: 'clamp(16px,3.5vw,28px)', color: '#ff00ff', textShadow: '0 0 18px #ff00ff', letterSpacing: '0.15em' }}
+                style={{ fontSize: 'clamp(14px,3vw,22px)', color: '#ff00ff', textShadow: '0 0 18px #ff00ff', letterSpacing: '0.12em' }}
               >{txt}</div>
             ) : (
               <div className="font-mono" style={{ fontSize: 13, color: '#00ff41', textShadow: '0 0 10px #00ff41', letterSpacing: '0.25em' }}>{txt}</div>
@@ -2877,6 +2981,7 @@ function MorningIntro({ onDismiss }) {
           </motion.div>
         ))}
       </div>
+
       <AnimatePresence>
         {phase === 'button' && (
           <motion.div
@@ -2885,7 +2990,7 @@ function MorningIntro({ onDismiss }) {
             className="mt-14 relative z-10"
           >
             <motion.button
-              onClick={handleDismiss}
+              onClick={handleSync}
               whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.94 }}
               animate={{ boxShadow: ['0 0 16px rgba(0,245,255,0.3)','0 0 32px rgba(0,245,255,0.7)','0 0 16px rgba(0,245,255,0.3)'] }}
               transition={{ repeat: Infinity, duration: 2 }}
@@ -2893,13 +2998,17 @@ function MorningIntro({ onDismiss }) {
               style={{ background: 'rgba(0,245,255,0.1)', border: '2px solid #00f5ff', color: '#00f5ff', letterSpacing: '0.2em' }}
             >⚡ SYNC NEURAL LINK</motion.button>
             <p className="font-mono text-center mt-3" style={{ color: 'rgba(0,245,255,0.3)', fontSize: 9, letterSpacing: '0.3em' }}>
-              DISMISS TO BEGIN DAY 02 OPERATIONS
+              DISMISS TO BEGIN DAY {String(currentDay).padStart(2,'0')} OPERATIONS
             </p>
           </motion.div>
         )}
       </AnimatePresence>
-      {[{style:{top:16,left:16}},{style:{top:16,right:16,transform:'scaleX(-1)'}},{style:{bottom:16,left:16,transform:'scaleY(-1)'}},{style:{bottom:16,right:16,transform:'scale(-1,-1)'}}].map((props,i) => (
-        <svg key={i} width="40" height="40" viewBox="0 0 40 40" fill="none" className="absolute pointer-events-none" style={{...props.style,opacity:0.5}}>
+
+      {/* Corner brackets */}
+      {[{t:16,l:16,r:'none',b:'none'},{t:16,r:16,l:'none',b:'none'},{b:16,l:16,t:'none',r:'none'},{b:16,r:16,t:'none',l:'none'}].map((s,i) => (
+        <svg key={i} width="40" height="40" viewBox="0 0 40 40" fill="none" className="absolute pointer-events-none"
+          style={{ top: s.t !== 'none' ? s.t : 'auto', bottom: s.b !== 'none' ? s.b : 'auto', left: s.l !== 'none' ? s.l : 'auto', right: s.r !== 'none' ? s.r : 'auto', opacity: 0.5, transform: i === 1 ? 'scaleX(-1)' : i === 2 ? 'scaleY(-1)' : i === 3 ? 'scale(-1,-1)' : 'none' }}
+        >
           <path d="M0 40 L0 0 L40 0" stroke="#00f5ff" strokeWidth="1.5"/>
         </svg>
       ))}
@@ -2908,7 +3017,18 @@ function MorningIntro({ onDismiss }) {
 }
 
 function DailyReward({ onClose }) {
-  const LORE = `Sector 2 Secured. The Ghost's thermal signature is fading.\n\nYour cognitive output has exceeded baseline parameters.\n\nRest now, Pilot. Tomorrow, the Equilibrium awaits.`;
+const currentDay = getCampaignCurrentDay();
+const DAILY_LORE = {
+  1: `Sector 1 Cleared. The Atomic foundations are set.\n\nYour Neural Link is stable. The Ghost has been sighted.\n\nRest now, Pilot. The Heat Protocol begins tomorrow.`,
+  2: `Sector 2 Secured. The Ghost's thermal signature is fading.\n\nYour cognitive output has exceeded baseline parameters.\n\nRest now, Pilot. Tomorrow, the Equilibrium awaits.`,
+  3: `Sector 3 Neutralized. Balance and chaos — both defeated.\n\nThe Ghost recalculates. It did not expect this pace.\n\nRest now, Pilot. The Current Wars begin at dawn.`,
+  4: `Sector 4 Dominated. The electrochemical grid is yours.\n\nYour Integrity holds. The Ghost is losing ground.\n\nRest now, Pilot. Calculus awaits the next sunrise.`,
+  5: `Sector 5 Annihilated. The derivatives could not stop you.\n\nFour sectors remain. The Ghost is desperate.\n\nRest now, Pilot. The organic uprising is next.`,
+  6: `Sector 6 Conquered. Carbon has surrendered its secrets.\n\nThe Ghost's trail goes cold. You are ahead.\n\nRest now, Pilot. Only the Final Nexus remains.`,
+  7: `Sector 7 Complete. The Nexus bows before you.\n\nOne day remains. The Ghost has been cornered.\n\nRest now, Pilot. Tomorrow — Ascension.`,
+  8: `ALL SECTORS ANNIHILATED. THE CAMPAIGN IS COMPLETE.\n\nNeural Link: 100%. The Ghost has been integrated.\n\nYou are no longer the student. You are the System.`,
+};
+const LORE = DAILY_LORE[currentDay] || DAILY_LORE[1];
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -2934,7 +3054,7 @@ function DailyReward({ onClose }) {
         <motion.div initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.35 }}
           className="font-mono text-xs tracking-widest mb-3 px-4 py-1.5"
           style={{ background:'rgba(0,245,255,0.08)', border:'1px solid rgba(0,245,255,0.4)', color:'#00f5ff', textShadow:'0 0 10px #00f5ff' }}
-        >✦ DAY 02 COMPLETE — SECTOR 2 SECURED ✦</motion.div>
+        >>✦ DAY {String(currentDay).padStart(2,'0')} COMPLETE — SECTOR {currentDay} SECURED ✦</motion.div></motion.div>
         <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
           className="font-mono text-sm leading-relaxed mb-8"
           style={{ color:'rgba(180,210,230,0.85)', whiteSpace:'pre-line', lineHeight:1.8 }}
@@ -2944,7 +3064,7 @@ function DailyReward({ onClose }) {
           transition={{ repeat:Infinity, duration:2 }}
           className="px-10 py-3 font-mono font-black tracking-widest text-sm victory-ring"
           style={{ background:'rgba(0,245,255,0.1)', border:'1.5px solid #00f5ff', color:'#00f5ff', letterSpacing:'0.18em' }}
-        >REST, PILOT — SEE YOU ON DAY 03</motion.button>
+        >{currentDay < 8 ? `REST, PILOT — SEE YOU ON DAY ${String(currentDay + 1).padStart(2,'0')}` : `MISSION COMPLETE — YOU ARE THE SYSTEM`}</motion.button>
       </motion.div>
     </motion.div>
   );
@@ -3163,6 +3283,7 @@ export default function App() {
 
   // ── MICRO-MISSION STATE ─────────────────────────────────────────
   const [gachaRefresh, setGachaRefresh] = useState(0);
+  const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [showMorningIntro, setShowMorningIntro] = useState(true);
   const [showDailyReward,  setShowDailyReward]  = useState(false);
   const day2RewardShownRef = useRef(false);
@@ -3215,23 +3336,30 @@ export default function App() {
     LS.set('daily_pyq_day',     getGameDay());
   }, [dailyPyqsSolved]);
 
-const DAY2_CHAPTER_KEYS = EPISODES[1].chapters.map(c => `${c.subject}::${c.name}`);
+// ── DYNAMIC DAILY VICTORY CHECK ────────────────────────────────────
 useEffect(() => {
   if (day2RewardShownRef.current) return;
-  const allDone = DAY2_CHAPTER_KEYS.every(k => completedChapters.includes(k));
+
+  const currentDay = getCampaignCurrentDay();
+  if (currentDay < 1 || currentDay > 8) return;
+
+  // Today's episode index = currentDay - 1 (Episodes array is 0-indexed)
+  const todayEpisodeIndex = currentDay - 1;
+  const todayEpisode = EPISODES[todayEpisodeIndex];
+  if (!todayEpisode) return;
+
+  const todayChapterKeys = todayEpisode.chapters.map(c => `${c.subject}::${c.name}`);
+  const allDone = todayChapterKeys.every(k => completedChapters.includes(k));
   if (!allDone) return;
-  const now = new Date();
-  const isDay2 = now.getFullYear() === 2026
-              && now.getMonth()    === 4
-              && now.getDate()     === 2;
-  // Safety: also fires if it's past midnight (hours 0-5 still count as Day 2)
-  const isDay2Night = now.getFullYear() === 2026
-                   && now.getMonth()    === 4
-                   && now.getDate()     === 3
-                   && now.getHours()    < 6;
-  if (!isDay2 && !isDay2Night) return;
+
+  // Check we haven't shown the reward for today already
+  const rewardShownDay = LS.get('daily_reward_shown_day', null);
+  if (rewardShownDay === getTodayDateString()) return;
+
   day2RewardShownRef.current = true;
-  playVictoryOST();
+  LS.set('daily_reward_shown_day', getTodayDateString());
+
+  playVictoryOSTSafe();
   setTimeout(() => setShowDailyReward(true), 1800);
 }, [completedChapters]);
   
@@ -3769,9 +3897,12 @@ useEffect(() => {
         {showBoot && <BootSequence onInitialize={handleInitialize} />}
       </AnimatePresence>
 
-      <AnimatePresence>
+<AnimatePresence>
   {showMorningIntro && appReady && (
-    <MorningIntro onDismiss={() => setShowMorningIntro(false)} />
+    <MorningIntro
+      onDismiss={() => setShowMorningIntro(false)}
+      onAudioUnlock={() => setAudioUnlocked(true)}
+    />
   )}
 </AnimatePresence>
 
