@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 
 import NeuralDestinyGacha, { GachaStatusIcon } from './NeuralDestinyGacha';
+import ResonanceSiege, { useBossModeTheme } from './ResonanceSiege';
 
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 1 — CONSTANTS
@@ -3217,6 +3218,7 @@ export default function App() {
 
   const userLevel   = getUserLevel(totalXP);
   const systemTheme = getSystemTheme(userLevel);
+  const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length);
 
   // ── WAR START DATE ──────────────────────────────────────────────
   const [warStartDate, setWarStartDate] = useState(() => {
@@ -3906,13 +3908,13 @@ useEffect(() => {
 
       <AnimatePresence>
         {appReady && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6 }}
-            className={containerClasses}
-            style={{ background: bgStyle, color: '#e0f0ff' }}
-          >
+         <motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ duration: 0.6 }}
+  className={[containerClasses, isBossMode ? 'boss-mode-active' : ''].filter(Boolean).join(' ')}
+  style={{ background: isBossMode ? 'linear-gradient(180deg,#0a0202 0%,#120303 50%,#0a0202 100%)' : bgStyle, color: '#e0f0ff', ...bossThemeStyle }}
+>
             <style>{`
               ${glitchCSS}
               ${NARRATIVE_CSS}
@@ -3956,6 +3958,15 @@ useEffect(() => {
               }
             `}</style>
 
+<ResonanceSiege
+  activeMission={missions[0] || null}
+  completedCount={completedChapters.length}
+  audioUnlocked={audioUnlocked}
+  rpgStats={rpgStats}
+  setRpgStats={setRpgStats}
+  isBossMode={isBossMode}
+/>
+           
             {/* Hidden print zone */}
             <div id="archive-report" style={{ display: 'none' }}>
               <div className="print-header">
