@@ -192,3 +192,103 @@ option {
   box-shadow: 0 0 4px var(--cyber-magenta);
   animation: strike 0.5s ease-out forwards;
 }
+/* ═══════════════════════════════════════════════════════════════════
+   RESONANCE SIEGE — CSS ADDITIONS
+   Append this block to the bottom of your existing index.css
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ── Flickering Sector Font Effect ─────────────────────────────────── */
+@keyframes sector-flicker {
+  0%,  19%,  21%,  23%,  25%,  54%,  56%, 100% {
+    opacity: 1;
+    text-shadow: 0 0 10px var(--sector-color, #00f5ff),
+                 0 0 20px var(--sector-color, #00f5ff),
+                 0 0 40px var(--sector-color, #00f5ff);
+  }
+  20%, 24%, 55% {
+    opacity: 0.82;
+    text-shadow: none;
+  }
+}
+
+.sector-flicker {
+  animation: sector-flicker 4.5s linear infinite;
+}
+
+/* Boss mode intensifies the flicker */
+.boss-mode .sector-flicker {
+  --sector-color: #ff4444;
+  animation: sector-flicker 1.8s linear infinite;
+}
+
+/* ── Resonance Scanning Line ────────────────────────────────────────── */
+@keyframes resonance-scan {
+  0%   { bottom: 2%;   opacity: 0.4; }
+  45%  { opacity: 1;                 }
+  50%  { bottom: 98%;  opacity: 1;   }
+  95%  { opacity: 0.4;               }
+  100% { bottom: 2%;   opacity: 0.4; }
+}
+
+.resonance-scan-line {
+  animation: resonance-scan 2.2s ease-in-out infinite;
+}
+
+/* ── Boss Mode Global Theme Override ────────────────────────────────── */
+@keyframes boss-pulse-bg {
+  0%,  100% { background-color: #0a0303; }
+  50%        { background-color: #120404; }
+}
+
+@keyframes boss-border-pulse {
+  0%,  100% { border-color: rgba(180, 20, 20, 0.35); }
+  50%        { border-color: rgba(255, 40, 40, 0.55); }
+}
+
+/* Applied via inline style in useBossModeTheme, but override card styles */
+.boss-mode-active .card-bg {
+  background: linear-gradient(135deg, #180a0a 0%, #0c0505 100%) !important;
+  border-color: rgba(180, 30, 30, 0.4) !important;
+}
+
+/* ── Mission Ticker Slide Animation ─────────────────────────────────── */
+@keyframes ticker-slide-in {
+  from { transform: translateX(40px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+@keyframes ticker-slide-out {
+  from { transform: translateX(0);     opacity: 1; }
+  to   { transform: translateX(-40px); opacity: 0; }
+}
+
+/* ── Resonance Gauge Container ──────────────────────────────────────── */
+.resonance-gauge-container {
+  /* Additional layered glow on the container edge */
+  transition: border-color 1s ease, box-shadow 1s ease;
+}
+
+/* ── Buff Toast Animations ──────────────────────────────────────────── */
+@keyframes buff-enter {
+  from { transform: translateX(80px); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+
+/* ── Print: hide all Resonance Siege elements ────────────────────────── */
+@media print {
+  .resonance-gauge-container,
+  .sector-display,
+  .mission-ticker {
+    display: none !important;
+  }
+}
+
+/* ── Prevent body overflow from fixed gauge ─────────────────────────── */
+body {
+  overflow-x: hidden;
+}
+
+/* ── Lore fragment blur transition ─────────────────────────────────── */
+.resonance-lore {
+  transition: filter 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
