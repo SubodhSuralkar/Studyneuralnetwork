@@ -11,6 +11,8 @@ import {
   Zap as ZapIcon, Map, Navigation, Calendar, TrendingDown,
 } from 'lucide-react';
 
+import NeuralDestinyGacha, { GachaStatusIcon } from './NeuralDestinyGacha';
+
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 1 — CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
@@ -3160,6 +3162,7 @@ export default function App() {
   const [vigilanceMode, setVigilanceMode] = useState(() => LS.get('vigilance_mode', false));
 
   // ── MICRO-MISSION STATE ─────────────────────────────────────────
+  const [gachaRefresh, setGachaRefresh] = useState(0);
   const [showMorningIntro, setShowMorningIntro] = useState(true);
   const [showDailyReward,  setShowDailyReward]  = useState(false);
   const day2RewardShownRef = useRef(false);
@@ -3891,6 +3894,9 @@ useEffect(() => {
     <DailyReward onClose={() => setShowDailyReward(false)} />
   )}
 </AnimatePresence>
+
+            {/* NEURAL DESTINY GACHA */}
+<NeuralDestinyGacha onPull={() => setGachaRefresh(r => r + 1)} />
             
             {/* War Archive Modal */}
             <AnimatePresence>
@@ -3972,6 +3978,7 @@ useEffect(() => {
 
                   <div className="flex items-center gap-3 flex-wrap justify-end">
                     <SystemIntegrityBar integrity={systemIntegrity} />
+                    <GachaStatusIcon key={gachaRefresh} />
                     
 {/* ── PWA INSTALL BUTTON — only shows before install ── */}
                   {installPrompt && !isAppInstalled && (
@@ -4094,6 +4101,9 @@ useEffect(() => {
                 dailyPyqsSolved={dailyPyqsSolved}
                 onRedeem={(mins) => {}}
               />
+
+              {/* NEURAL DESTINY RIFT */}
+<NeuralDestinyGacha onPull={() => setGachaRefresh(r => r + 1)} />
 
               {/* SECTION 1: MISSION BUILDER */}
               <section style={{ opacity: timerIsRunning ? 0.5 : 1, transition: 'opacity 0.4s', pointerEvents: timerIsRunning ? 'none' : 'auto' }}>
