@@ -155,13 +155,13 @@ const SUBJECT_PRINT_COLORS = {
 };
 
 const RANK_THRESHOLDS = [
-  { rank: 'CADET',       min: 0,      max: 5000   },
-  { rank: 'RECRUIT',     min: 50000,   max: 120000  },
-  { rank: 'SPECIALIST',  min: 120000,  max: 250000  },
-  { rank: 'OPERATIVE',   min: 250000,  max: 450000  },
-  { rank: 'COMMANDER',   min: 450000,  max: 700000  },
-  { rank: 'WARLORD',     min: 700000,  max: 1000000 },
-  { rank: 'NEXUS ELITE', min: 1000000, max: 9999999 },
+  { rank: 'CADET',       min: 0,      max: 50000   },
+  { rank: 'RECRUIT',     min: 50000,   max: 70000  },
+  { rank: 'SPECIALIST',  min: 100000,  max: 150000  },
+  { rank: 'OPERATIVE',   min: 150000,  max: 200000  },
+  { rank: 'COMMANDER',   min: 200000,  max: 320000  },
+  { rank: 'WARLORD',     min: 320000,  max: 420000 },
+  { rank: 'NEXUS ELITE', min: 420000,  max: 500000 },
 ];
 
 const TIMER_PRESETS = [
@@ -171,10 +171,10 @@ const TIMER_PRESETS = [
 ];
 
 const LEVEL_THRESHOLDS = [
-  0, 20000, 50000, 90000, 140000,
-  200000, 280000, 370000, 470000, 580000,
-  710000, 860000, 1030000, 1220000, 1430000,
-  1670000, 1940000, 2240000, 2570000, 9999999,
+  0, 20000, 50000, 70000, 100000,
+  150000, 170000, 200000, 220000, 250000,
+  270000, 280000, 300000, 320000, 350000,
+  400000, 420000, 450000, 470000, 500000,
 ];
 
 // ── CAMPAIGN DATE SYSTEM ─────────────────────────────────────────────
@@ -337,8 +337,8 @@ function getLevelProgress(xp) {
 }
 
 function getSystemTheme(level) {
-  if (level >= 19) return 'god';
-  if (level >= 10) return 'neon';
+  if (level >= 15) return 'god';
+  if (level >= 8) return 'neon';
   return 'dim';
 }
 
