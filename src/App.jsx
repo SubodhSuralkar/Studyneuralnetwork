@@ -2839,13 +2839,13 @@ const audioRef  = useRef(null);
 // the render cycle where React may have stale closure values.
 useEffect(() => {
   if (currentDay < 1 || currentDay > 8) return;
-  const now = new Date();
-  if (now.getHours() < 6) return;
-  const lastSeen = localStorage.getItem('morning_intro_last_date');
-  if (lastSeen !== todayStr) {
+  // Use plain date string — shows intro every calendar day regardless of 6AM gate
+  const todayPlain = new Date().toLocaleDateString();
+  const lastSeen   = localStorage.getItem('morning_intro_last_date');
+  if (lastSeen !== todayPlain) {
     setVisible(true);
   }
-}, []); // runs once on mount — intentionally empty deps
+}, []); // intentionally empty — reads fresh from localStorage on mount
 
   // ── DYNAMIC EPISODE DATA PER DAY ────────────────────────────────
   const DAY_META = {
@@ -2886,14 +2886,12 @@ useEffect(() => {
   };
 }, [visible]);
 
-  // ── SYNC BUTTON CLICK — audio starts here to bypass browser block ──
-    const handleSync = () => {
-  // ── 1. Start audio on user gesture (bypasses browser autoplay block) ──
+const handleSync = () => {
+  // 1. Start audio on user gesture — bypasses browser autoplay block
   try {
     const audio = new Audio('/intro-theme.mp3');
     audio.volume = 0.55;
     audio.play().catch(() => {});
-    // Fade out after 28 seconds
     const faderId = setTimeout(() => {
       const fadeInterval = setInterval(() => {
         if (audio.volume <= 0.05) {
@@ -2904,23 +2902,21 @@ useEffect(() => {
         }
       }, 120);
     }, 28000);
-    // Store on window so unmount cleanup cannot reach it
     window._introAudio = audio;
     window._introFader = faderId;
   } catch {}
 
-  // ── 2. Unlock audio for the rest of the session ──
+  // 2. Unlock audio globally for the session
   markAudioUnlocked();
   if (onAudioUnlock) onAudioUnlock();
 
-  // ── 3. Persist so today's intro doesn't replay ──
-  localStorage.setItem('morning_intro_last_date', todayStr);
+  // 3. Persist — won't show again today
+localStorage.setItem('morning_intro_last_date', new Date().toLocaleDateString());
 
-  // ── 4. Dismiss (unmount is safe — audio lives on window now) ──
+  // 4. Dismiss safely — audio survives on window
   setVisible(false);
   onDismiss?.();
 };
-  };
 
   if (!visible) return null;
 
@@ -4027,9 +4023,6 @@ useEffect(() => {
     <DailyReward onClose={() => setShowDailyReward(false)} />
   )}
 </AnimatePresence>
-
-            {/* NEURAL DESTINY GACHA */}
-<NeuralDestinyGacha onPull={() => setGachaRefresh(r => r + 1)} />
             
             {/* War Archive Modal */}
             <AnimatePresence>
