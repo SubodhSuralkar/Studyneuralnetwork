@@ -3218,7 +3218,6 @@ export default function App() {
 
   const userLevel   = getUserLevel(totalXP);
   const systemTheme = getSystemTheme(userLevel);
-  const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length);
 
   // ── WAR START DATE ──────────────────────────────────────────────
   const [warStartDate, setWarStartDate] = useState(() => {
@@ -3251,8 +3250,11 @@ export default function App() {
   const prevIntegrityRef = useRef(systemIntegrity);
 
   // ── CORE APP STATE ──────────────────────────────────────────────
-  const [completedChapters, setCompletedChapters] = useState(() => LS.get('completed_chapters', []));
-  const [missions,          setMissions]          = useState(() => LS.get('missions', []));
+const [completedChapters, setCompletedChapters] = useState(() => LS.get('completed_chapters', []));
+const [missions,          setMissions]          = useState(() => LS.get('missions', []));
+
+// ── BOSS MODE — must come after completedChapters is declared ──
+const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length);
 
   // ── REVISIONS ───────────────────────────────────────────────────
   const [revisions, setRevisions] = useState(() => {
