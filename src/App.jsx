@@ -2829,17 +2829,23 @@ function MorningIntro({ onDismiss, onAudioUnlock }) {
 
   // ── VISIBILITY LOGIC ────────────────────────────────────────────
   // Show if: campaign is active (day 1-8) AND after 06:00 AND not yet seen today
-  const [visible, setVisible] = useState(() => {
-    if (currentDay < 1 || currentDay > 8) return false;
-    const now = new Date();
-    if (now.getHours() < 6) return false;
-    const lastSeen = localStorage.getItem('morning_intro_last_date');
-    return lastSeen !== todayStr;
-  });
+const [visible, setVisible] = useState(false);
+const [phase,   setPhase]   = useState('boot');
+const [line,    setLine]    = useState(0);
+const audioRef  = useRef(null);
 
-  const [phase,   setPhase]   = useState('boot');
-  const [line,    setLine]    = useState(0);
-  const audioRef  = useRef(null);
+// ── MOUNT-TIME VISIBILITY CHECK ──────────────────────────────────
+// Runs after mount so localStorage is always read fresh, not during
+// the render cycle where React may have stale closure values.
+useEffect(() => {
+  if (currentDay < 1 || currentDay > 8) return;
+  const now = new Date();
+  if (now.getHours() < 6) return;
+  const lastSeen = localStorage.getItem('morning_intro_last_date');
+  if (lastSeen !== todayStr) {
+    setVisible(true);
+  }
+}, []); // runs once on mount — intentionally empty deps
 
   // ── DYNAMIC EPISODE DATA PER DAY ────────────────────────────────
   const DAY_META = {
@@ -2861,63 +2867,59 @@ function MorningIntro({ onDismiss, onAudioUnlock }) {
     `MISSION: ${meta.epTitle}`,
   ];
 
-  useEffect(() => {
-    if (!visible) return;
-    // NOTE: Audio is intentionally NOT started here — browser blocks autoplay.
-    // It starts inside handleSync() on the button click below.
-    const bootTimer = setTimeout(() => {
-      setPhase('lines');
-      let idx = 0;
-      const advance = () => {
-        idx++;
-        setLine(idx);
-        if (idx < LINES.length - 1) setTimeout(advance, 1100);
-        else setTimeout(() => setPhase('button'), 1400);
-      };
-      setTimeout(advance, 900);
-    }, 600);
-    return () => {
-      clearTimeout(bootTimer);
-      if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
+useEffect(() => {
+  if (!visible) return;
+  const bootTimer = setTimeout(() => {
+    setPhase('lines');
+    let idx = 0;
+    const advance = () => {
+      idx++;
+      setLine(idx);
+      if (idx < LINES.length - 1) setTimeout(advance, 1100);
+      else setTimeout(() => setPhase('button'), 1400);
     };
-  }, [visible]);
+    setTimeout(advance, 900);
+  }, 600);
+  return () => {
+    clearTimeout(bootTimer);
+    // Do NOT touch audioRef here — audio is managed on window._introAudio
+  };
+}, [visible]);
 
   // ── SYNC BUTTON CLICK — audio starts here to bypass browser block ──
-  const handleSync = () => {
-    // Start intro audio NOW (user gesture unlocks autoplay)
-    try {
-      const audio = new Audio('/intro-theme.mp3');
-      audio.volume = 0.55;
-      audio.play().catch(() => {});
-      audioRef.current = audio;
-      // Fade out after 28s
-      setTimeout(() => {
-        const faderId = setInterval(() => {
-          if (!audioRef.current) { clearInterval(faderId); return; }
-          audioRef.current.volume = Math.max(0, audioRef.current.volume - 0.05);
-          if (audioRef.current.volume <= 0) {
-            audioRef.current.pause();
-            clearInterval(faderId);
-          }
-        }, 120);
-      }, 28000);
-    } catch {}
+    const handleSync = () => {
+  // ── 1. Start audio on user gesture (bypasses browser autoplay block) ──
+  try {
+    const audio = new Audio('/intro-theme.mp3');
+    audio.volume = 0.55;
+    audio.play().catch(() => {});
+    // Fade out after 28 seconds
+    const faderId = setTimeout(() => {
+      const fadeInterval = setInterval(() => {
+        if (audio.volume <= 0.05) {
+          audio.pause();
+          clearInterval(fadeInterval);
+        } else {
+          audio.volume = Math.max(0, audio.volume - 0.05);
+        }
+      }, 120);
+    }, 28000);
+    // Store on window so unmount cleanup cannot reach it
+    window._introAudio = audio;
+    window._introFader = faderId;
+  } catch {}
 
-    // Mark audio as globally unlocked for the session
-    markAudioUnlocked();
-    if (onAudioUnlock) onAudioUnlock();
+  // ── 2. Unlock audio for the rest of the session ──
+  markAudioUnlocked();
+  if (onAudioUnlock) onAudioUnlock();
 
-    // Persist — won't show again today
-    localStorage.setItem('morning_intro_last_date', todayStr);
+  // ── 3. Persist so today's intro doesn't replay ──
+  localStorage.setItem('morning_intro_last_date', todayStr);
 
-    // Cleanup and dismiss
-    if (audioRef.current) {
-      setTimeout(() => {
-        if (audioRef.current) { audioRef.current.pause(); audioRef.current = null; }
-      }, 200);
-    }
-    setVisible(false);
-    onDismiss?.();
+  // ── 4. Dismiss (unmount is safe — audio lives on window now) ──
+  setVisible(false);
+  onDismiss?.();
+};
   };
 
   if (!visible) return null;
@@ -3054,7 +3056,7 @@ const LORE = DAILY_LORE[currentDay] || DAILY_LORE[1];
         <motion.div initial={{ opacity:0, scale:0.8 }} animate={{ opacity:1, scale:1 }} transition={{ delay:0.35 }}
           className="font-mono text-xs tracking-widest mb-3 px-4 py-1.5"
           style={{ background:'rgba(0,245,255,0.08)', border:'1px solid rgba(0,245,255,0.4)', color:'#00f5ff', textShadow:'0 0 10px #00f5ff' }}
-        >>✦ DAY {String(currentDay).padStart(2,'0')} COMPLETE — SECTOR {currentDay} SECURED ✦</motion.div></motion.div>
+        >✦ DAY {String(currentDay).padStart(2,'0')} COMPLETE — SECTOR {currentDay} SECURED ✦</motion.div>
         <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.5 }}
           className="font-mono text-sm leading-relaxed mb-8"
           style={{ color:'rgba(180,210,230,0.85)', whiteSpace:'pre-line', lineHeight:1.8 }}
