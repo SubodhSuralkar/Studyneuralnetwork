@@ -292,3 +292,245 @@ body {
 .resonance-lore {
   transition: filter 1.5s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   PROJECT ECHO — CSS
+   Append this entire block to the BOTTOM of your existing index.css
+   ═══════════════════════════════════════════════════════════════════
+
+   Contains:
+   1. Cliffhanger red glow
+   2. CRT grain + scanline animations
+   3. Marquee scroll animation
+   4. Cursor blink
+   5. Rescue bonus toast
+   6. Chapter completion trigger effects
+   ═══════════════════════════════════════════════════════════════════ */
+
+
+/* ─────────────────────────────────────────────────────────────────
+   1. NEON RED CLIFFHANGER — The money style
+   ───────────────────────────────────────────────────────────────── */
+
+.neon-red-cliffhanger {
+  color: #ff2222;
+  font-weight: 700;
+  text-shadow:
+    0 0 6px  rgba(255, 34,  34, 0.9),
+    0 0 14px rgba(255, 34,  34, 0.6),
+    0 0 28px rgba(255,  0,   0, 0.4),
+    0 0 50px rgba(255,  0,   0, 0.2);
+  animation: cliffhanger-pulse 2.4s ease-in-out infinite;
+  display: inline;
+}
+
+@keyframes cliffhanger-pulse {
+  0%, 100% {
+    text-shadow:
+      0 0 6px  rgba(255, 34,  34, 0.9),
+      0 0 14px rgba(255, 34,  34, 0.6),
+      0 0 28px rgba(255,  0,   0, 0.4),
+      0 0 50px rgba(255,  0,   0, 0.2);
+  }
+  50% {
+    text-shadow:
+      0 0 10px rgba(255, 34,  34, 1.0),
+      0 0 22px rgba(255, 34,  34, 0.8),
+      0 0 44px rgba(255,  0,   0, 0.6),
+      0 0 80px rgba(255,  0,   0, 0.35);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   2. CRT GRAIN ANIMATION
+   ───────────────────────────────────────────────────────────────── */
+
+/* Grain flicker — randomises background-position each frame */
+@keyframes echo-grain {
+  0%   { background-position:   0%   0%; }
+  10%  { background-position:  20%  40%; }
+  20%  { background-position:  80%  10%; }
+  30%  { background-position:  30%  70%; }
+  40%  { background-position:  60%  20%; }
+  50%  { background-position:  10%  90%; }
+  60%  { background-position:  90%  50%; }
+  70%  { background-position:  50%  30%; }
+  80%  { background-position:  70%  80%; }
+  90%  { background-position:  40%  60%; }
+  100% { background-position:  15%  15%; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   3. CRT SCANLINE SWEEP — Moving horizontal beam
+   ───────────────────────────────────────────────────────────────── */
+
+@keyframes echo-scan-sweep {
+  0%   { top: -10%;  opacity: 0;   }
+  5%   { opacity: 1;               }
+  90%  { opacity: 1;               }
+  95%  { opacity: 0.3;             }
+  100% { top: 110%; opacity: 0;    }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   4. TYPEWRITER CURSOR BLINK
+   ───────────────────────────────────────────────────────────────── */
+
+@keyframes crt-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   5. MARQUEE SCROLL — EchoMarquee component
+   ───────────────────────────────────────────────────────────────── */
+
+@keyframes echo-marquee-scroll {
+  0%   { transform: translateX(0%);    }
+  100% { transform: translateX(-50%);  }
+}
+
+/* Pause marquee on hover */
+.echo-marquee-track:hover {
+  animation-play-state: paused;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   6. CRT COLLAPSE — Chapter 21 Finale
+   ───────────────────────────────────────────────────────────────── */
+
+/* Used internally by the CRTCollapse React component via inline styles
+   but named here for reference and potential CSS-only fallback. */
+
+@keyframes crt-flash {
+  0%   { opacity: 0; }
+  10%  { opacity: 1; background: #fff; }
+  30%  { opacity: 0.7; }
+  60%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+@keyframes crt-shrink {
+  0%   { transform: scaleY(1);    opacity: 1; }
+  70%  { transform: scaleY(0.01); opacity: 1; }
+  85%  { transform: scaleY(0.01); opacity: 1; }
+  100% { transform: scaleY(0);    opacity: 0; }
+}
+
+@keyframes crt-credits-fade {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   7. RESCUE BONUS TOAST — "Connection Stabilized"
+   ───────────────────────────────────────────────────────────────── */
+
+.echo-rescue-toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 99985;
+  font-family: 'Share Tech Mono', 'Courier New', monospace;
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.15em;
+  padding: 10px 20px;
+  background: rgba(0, 255, 65, 0.12);
+  border: 1px solid rgba(0, 255, 65, 0.6);
+  color: #00ff41;
+  text-shadow: 0 0 10px #00ff41;
+  box-shadow: 0 0 20px rgba(0, 255, 65, 0.3);
+  white-space: nowrap;
+  pointer-events: none;
+  animation: echo-rescue-toast-anim 3.5s ease-out forwards;
+}
+
+@keyframes echo-rescue-toast-anim {
+  0%   { opacity: 0; transform: translateX(-50%) translateY(10px); }
+  10%  { opacity: 1; transform: translateX(-50%) translateY(0);    }
+  80%  { opacity: 1; transform: translateX(-50%) translateY(0);    }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-8px); }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   8. MODAL ENTER — Extra polish for modal background
+   ───────────────────────────────────────────────────────────────── */
+
+/* This class can optionally be applied to body during modal open */
+.echo-modal-open {
+  overflow: hidden;
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   9. SIGNAL COLOR UTILITIES
+   ───────────────────────────────────────────────────────────────── */
+
+.echo-signal-high   { color: #00ff41; text-shadow: 0 0 8px #00ff41; }
+.echo-signal-mid    { color: #ffff00; text-shadow: 0 0 8px #ffff00; }
+.echo-signal-low    { color: #ff6b00; text-shadow: 0 0 8px #ff6b00; }
+.echo-signal-crit   { color: #ff0000; text-shadow: 0 0 8px #ff0000; }
+
+/* ─────────────────────────────────────────────────────────────────
+   10. DISTORTION-ZONE EXTRA GLITCH (ARC 2, ch10-14)
+    Applied by adding .echo-distortion to the modal wrapper
+   ───────────────────────────────────────────────────────────────── */
+
+.echo-distortion {
+  animation: echo-distort-shake 3s ease-in-out infinite;
+}
+
+@keyframes echo-distort-shake {
+  0%,  90%, 100% { transform: translate(0, 0);              }
+  91%            { transform: translate(-1px, 0);            }
+  92%            { transform: translate(1px, 0) skewX(0.3deg); }
+  93%            { transform: translate(0, 0);              }
+  94%            { transform: translate(-1px, 1px);         }
+  95%            { transform: translate(0, 0);              }
+}
+
+/* Red channel offset for distortion text (optional class on body) */
+.echo-distortion-text {
+  position: relative;
+}
+.echo-distortion-text::before {
+  content: attr(data-text);
+  position: absolute;
+  left: 0; top: 0;
+  color: rgba(255, 0, 0, 0.5);
+  clip-path: inset(30% 0 50% 0);
+  transform: translate(-2px, 0);
+  animation: echo-distort-r 1.8s ease-in-out infinite;
+}
+.echo-distortion-text::after {
+  content: attr(data-text);
+  position: absolute;
+  left: 0; top: 0;
+  color: rgba(0, 245, 255, 0.5);
+  clip-path: inset(60% 0 20% 0);
+  transform: translate(2px, 0);
+  animation: echo-distort-b 1.8s ease-in-out infinite;
+}
+@keyframes echo-distort-r {
+  0%,  100% { clip-path: inset(30% 0 50% 0); transform: translate(-2px, 0); }
+  33%        { clip-path: inset(10% 0 70% 0); transform: translate(-1px, 1px); }
+  66%        { clip-path: inset(70% 0 10% 0); transform: translate(-3px, 0); }
+}
+@keyframes echo-distort-b {
+  0%,  100% { clip-path: inset(60% 0 20% 0); transform: translate(2px, 0); }
+  33%        { clip-path: inset(20% 0 60% 0); transform: translate(3px, 1px); }
+  66%        { clip-path: inset(80% 0 5%  0); transform: translate(1px, 0); }
+}
+
+/* ─────────────────────────────────────────────────────────────────
+   11. PRINT — hide all ECHO elements
+   ───────────────────────────────────────────────────────────────── */
+
+@media print {
+  .echo-marquee-wrapper,
+  .echo-modal-backdrop,
+  .echo-rescue-toast {
+    display: none !important;
+  }
+}
