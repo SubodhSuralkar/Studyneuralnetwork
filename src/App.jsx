@@ -111,6 +111,9 @@ const EPISODES = [
 ];
 
 const TOTAL_CHAPTERS     = Object.values(SYLLABUS).flat().length;
+const SYLLABUS_FLAT = Object.entries(SYLLABUS).flatMap(([subject, chapters]) =>
+  chapters.map(ch => ({ subject, name: ch.name, diff: ch.diff }))
+);
 const XP_MAP             = { H: 500, M: 300, E: 150 };
 const HOURS_MAP          = { H: 5,   M: 3,   E: 1.5 };
 const POMODORO_WORK      = 25 * 60;
@@ -3288,6 +3291,18 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
 
   // ── MICRO-MISSION STATE ─────────────────────────────────────────
   const [gachaRefresh, setGachaRefresh] = useState(0);
+  // ── PROJECT ECHO STATE ──────────────────────────────────────────
+  const [echoModalNarrative,  setEchoModalNarrative]  = useState(null);
+  const [echoFragmentSeen,    setEchoFragmentSeen]    = useState(
+    () => LS.get('echo_fragment_seen', 0)
+  );
+  const [echoLatestNarrative, setEchoLatestNarrative] = useState(() => {
+    const lastSeen = LS.get('echo_fragment_seen', 0);
+    return lastSeen > 0 ? getNarrativeByChapter(lastSeen) : null;
+  });
+  const consecutiveChaptersRef = useRef(0);
+  const lastTabHiddenRef       = useRef(false);
+  const rescueToastTimerRef    = useRef(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
   const [showMorningIntro, setShowMorningIntro] = useState(true);
   const [showDailyReward,  setShowDailyReward]  = useState(false);
@@ -3334,6 +3349,7 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
   useEffect(() => { LS.set('ptimer_isBreak',      timerIsBreak);      }, [timerIsBreak]);
   useEffect(() => { LS.set('ptimer_sessions',     timerCompletedSessions); }, [timerCompletedSessions]);
   useEffect(() => { LS.set('ptimer_taskId',       timerTaskId);       }, [timerTaskId]);
+  useEffect(() => { LS.set('echo_fragment_seen', echoFragmentSeen); }, [echoFragmentSeen]);
   useEffect(() => { LS.set('power_hour_end',      powerHourEnd);      }, [powerHourEnd]);
   useEffect(() => { LS.set('war_start_date',      warStartDate);      }, [warStartDate]);
   useEffect(() => {
@@ -3460,6 +3476,18 @@ useEffect(() => {
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []); // intentionally empty — reads live state via ref
 
+// ── ECHO RESCUE BONUS — visibility tracker ───────────────────
+  useEffect(() => {
+    const handler = () => {
+      if (document.hidden) {
+        lastTabHiddenRef.current = true;
+        consecutiveChaptersRef.current = 0;
+      }
+    };
+    document.addEventListener('visibilitychange', handler);
+    return () => document.removeEventListener('visibilitychange', handler);
+  }, []);
+  
   // ════════════════════════════════════════════════════════════════
   // NEURAL ALARM — reacts to systemIntegrity + timerIsRunning.
   // No changes needed here: the decay effects above update state,
@@ -3780,6 +3808,18 @@ useEffect(() => {
     });
   }, []);
 
+const fireRescueToast = useCallback(() => {
+    const existing = document.getElementById('echo-rescue-toast');
+    if (existing) existing.remove();
+    clearTimeout(rescueToastTimerRef.current);
+    const toast = document.createElement('div');
+    toast.id = 'echo-rescue-toast';
+    toast.className = 'echo-rescue-toast';
+    toast.textContent = '⟳ Syncing with ECHO... Connection Stabilized. (+1.5× Resonance)';
+    document.body.appendChild(toast);
+    rescueToastTimerRef.current = setTimeout(() => toast.remove(), 3600);
+  }, []);
+  
   // ── ANNIHILATE MISSION ──────────────────────────────────────────
   const handleAnnihilate = (task, comboLevel, velocityMultiplier) => {
     const chapterKey = `${task.subject}::${task.name}`;
@@ -3832,6 +3872,31 @@ useEffect(() => {
         milestones:  { d1: null, d3: null, d7: null },
       };
       setRevisions((prev) => [memoryNode, ...prev]);
+
+      // ▼ PROJECT ECHO ─────────────────────────────────────────
+      playEchoPacket(audioUnlocked);
+      const chapterIndex = getChapterIndexFromKey(chapterKey, SYLLABUS_FLAT);
+      if (chapterIndex !== null) {
+        const narrativeEntry = getNarrativeByChapter(chapterIndex);
+        if (narrativeEntry) {
+          if (!lastTabHiddenRef.current) {
+            consecutiveChaptersRef.current += 1;
+          } else {
+            consecutiveChaptersRef.current = 1;
+            lastTabHiddenRef.current = false;
+          }
+          if (consecutiveChaptersRef.current >= 2) fireRescueToast();
+          const prevSeen = LS.get('echo_fragment_seen', 0);
+          if (chapterIndex > prevSeen) {
+            LS.set('echo_fragment_seen', chapterIndex);
+            setEchoFragmentSeen(chapterIndex);
+            setEchoLatestNarrative(narrativeEntry);
+          }
+          setTimeout(() => setEchoModalNarrative(narrativeEntry), 800);
+        }
+      }
+      // ▲ PROJECT ECHO ─────────────────────────────────────────
+      
     }
 
     if (timerTaskId === task.id) {
@@ -4039,6 +4104,18 @@ useEffect(() => {
     <DailyReward onClose={() => setShowDailyReward(false)} />
   )}
 </AnimatePresence>
+
+           {/* ── PROJECT ECHO MODAL ── */}
+            <AnimatePresence>
+              {echoModalNarrative && (
+                <MemoryFragmentModal
+                  narrative={echoModalNarrative}
+                  audioUnlocked={audioUnlocked}
+                  isFinale={echoModalNarrative.chapter === 21}
+                  onClose={() => setEchoModalNarrative(null)}
+                />
+              )}
+            </AnimatePresence>
             
             {/* War Archive Modal */}
             <AnimatePresence>
@@ -4096,6 +4173,14 @@ useEffect(() => {
             </AnimatePresence>
 
             {/* HEADER */}
+            {echoLatestNarrative && (
+              <div className="echo-marquee-wrapper no-print sticky top-0 z-[51]">
+                <EchoMarquee
+                  latestNarrative={echoLatestNarrative}
+                  systemTheme={systemTheme}
+                />
+              </div>
+            )}
             <header className="no-print sticky top-0 z-50 border-b" style={headerStyle}>
               <div className="max-w-7xl mx-auto px-4 py-3">
                 <div className="flex items-center justify-between">
