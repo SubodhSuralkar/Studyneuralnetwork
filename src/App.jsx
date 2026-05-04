@@ -14,6 +14,9 @@ import {
 import NeuralDestinyGacha, { GachaStatusIcon } from './NeuralDestinyGacha';
 import ResonanceSiege, { useBossModeTheme } from './ResonanceSiege';
 
+import MemoryFragmentModal, { EchoMarquee, playEchoPacket, } from './MemoryFragmentModal';
+import ECHO_NARRATIVE, { getChapterIndexFromKey, getNarrativeByChapter, } from './narrativeContent';
+
 // ═══════════════════════════════════════════════════════════════════
 // SECTION 1 — CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
@@ -1617,13 +1620,13 @@ function TemporalWarMap({ warStartDate, warArchives, totalChapters, completedCou
 
   let intelligenceText = '';
   if (remaining === 0) {
-    intelligenceText = '⚡ SYLLABUS 100% ANNIHILATED — MISSION ACCOMPLISHED.';
+    intelligenceText = '⚡  100% ANNIHILATED — MISSION ACCOMPLISHED.';
   } else if (daysRequired === Infinity) {
     intelligenceText = '⚠ VELOCITY = 0. NO CHAPTERS ELIMINATED. BEGIN COMBAT IMMEDIATELY.';
   } else if (isOnTrack) {
-    intelligenceText = `✓ AT CURRENT VELOCITY, SYLLABUS BREACH IN ${daysRequired.toFixed(1)} DAYS — ${Math.abs(daysAheadBehind).toFixed(1)} DAYS AHEAD OF DEADLINE.`;
+    intelligenceText = `✓ AT CURRENT VELOCITY,  BREACH IN ${daysRequired.toFixed(1)} DAYS — ${Math.abs(daysAheadBehind).toFixed(1)} DAYS AHEAD OF DEADLINE.`;
   } else {
-    intelligenceText = `⚠ AT CURRENT VELOCITY, SYLLABUS BREACH IN ${daysRequired.toFixed(1)} DAYS — ${Math.abs(daysAheadBehind).toFixed(1)} DAYS PAST DEADLINE. ACCELERATE.`;
+    intelligenceText = `⚠ AT CURRENT VELOCITY,  BREACH IN ${daysRequired.toFixed(1)} DAYS — ${Math.abs(daysAheadBehind).toFixed(1)} DAYS PAST DEADLINE. ACCELERATE.`;
   }
 
   const recentDays = days.filter(({ dayKey }) => {
@@ -2191,7 +2194,7 @@ function EpisodeCard({ episode, isLocked, completedChapters, onDeployChapter, de
           const isCompleted = completedChapters.includes(key);
           const isDeployed  = deployedNames.some(d => d.subject === ch.subject && d.name === ch.name);
           const sc          = SUBJECT_CONFIG[ch.subject];
-          const dc          = DIFF_CONFIG[SYLLABUS[ch.subject]?.find(s => s.name === ch.name)?.diff || 'M'];
+          const dc          = DIFF_CONFIG[[ch.subject]?.find(s => s.name === ch.name)?.diff || 'M'];
           const SubIcon     = sc?.icon || BookOpen;
 
           return (
@@ -3119,7 +3122,7 @@ function EpisodeCardV2({ episode, isLocked, completedChapters, onDeployChapter, 
           const seqUnlocked  = isChapterSequentiallyUnlocked(episode, idx, completedChapters);
           const isDeployed   = deployedNames.some(d => d.subject === ch.subject && d.name === ch.name);
           const sc           = SUBJECT_CONFIG[ch.subject];
-          const dc           = DIFF_CONFIG[SYLLABUS[ch.subject]?.find(s => s.name === ch.name)?.diff || 'M'];
+          const dc           = DIFF_CONFIG[[ch.subject]?.find(s => s.name === ch.name)?.diff || 'M'];
           const SubIcon      = sc?.icon || BookOpen;
           const visuallyLocked = isLocked || (!isCompleted && !seqUnlocked);
           return (
@@ -3313,7 +3316,7 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
   const [formPyqCount, setFormPyqCount] = useState(0);
 
   useEffect(() => {
-    const first = SYLLABUS['Physics'].find((ch) => !completedChapters.includes(`Physics::${ch.name}`));
+    const first = ['Physics'].find((ch) => !completedChapters.includes(`Physics::${ch.name}`));
     if (first) { setFormChapter(first.name); setFormDiff(first.diff); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -3658,7 +3661,7 @@ useEffect(() => {
   const ghostMetrics = getGhostMetrics(completedChapters.length);
   
   const activeMemoryNodes  = [...revisions].sort((a, b) => a.completedAt - b.completedAt);
-  const availableChapters  = SYLLABUS[formSubject].filter(
+  const availableChapters  = [formSubject].filter(
     (ch) => !completedChapters.includes(`${formSubject}::${ch.name}`)
   );
   const alreadyQueuedNames = missions
