@@ -321,7 +321,7 @@ function DestinyCard({ buff, isFlipped, onFlipDone }) {
           boxShadow: `0 0 40px ${buff?.glow || 'rgba(100,100,100,0.2)'}, inset 0 0 20px ${buff?.bg || 'rgba(0,0,0,0)'}`,
           clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 12px 100%, 0 calc(100% - 12px))',
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          padding: '24px 20px', position: 'relative', overflow: 'hidden',
+          padding: '24px 20px', overflow: 'hidden',
         }}>
           {showParticles && buff && <ParticleBurst color={buff.color} />}
 
