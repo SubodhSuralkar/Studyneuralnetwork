@@ -3330,8 +3330,10 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
   const [formDiff,     setFormDiff]     = useState('M');
   const [formPyqCount, setFormPyqCount] = useState(0);
 
-  useEffect(() => {
-    const first = ['Physics'].find((ch) => !completedChapters.includes(`Physics::${ch.name}`));
+useEffect(() => {
+    const first = SYLLABUS['Physics'].find(
+      (ch) => !completedChapters.includes(`Physics::${ch.name}`)
+    );
     if (first) { setFormChapter(first.name); setFormDiff(first.diff); }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -3689,7 +3691,7 @@ useEffect(() => {
   const ghostMetrics = getGhostMetrics(completedChapters.length);
   
   const activeMemoryNodes  = [...revisions].sort((a, b) => a.completedAt - b.completedAt);
-  const availableChapters  = [formSubject].filter(
+const availableChapters  = (SYLLABUS[formSubject] || []).filter(
     (ch) => !completedChapters.includes(`${formSubject}::${ch.name}`)
   );
   const alreadyQueuedNames = missions
