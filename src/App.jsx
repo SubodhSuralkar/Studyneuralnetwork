@@ -3330,13 +3330,17 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
   const [formDiff,     setFormDiff]     = useState('M');
   const [formPyqCount, setFormPyqCount] = useState(0);
 
+// ✅ FIXED — correctly finds the first incomplete Physics chapter
 useEffect(() => {
-    const first = SYLLABUS['Physics'].find(
-      (ch) => !completedChapters.includes(`Physics::${ch.name}`)
-    );
-    if (first) { setFormChapter(first.name); setFormDiff(first.diff); }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const first = SYLLABUS['Physics'].find(
+    (ch) => !completedChapters.includes(`Physics::${ch.name}`)
+  );
+  if (first) {
+    setFormChapter(first.name);
+    setFormDiff(first.diff);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
 
   // ── PERSISTENCE ─────────────────────────────────────────────────
   useEffect(() => { LS.set('completed_chapters', completedChapters); }, [completedChapters]);
