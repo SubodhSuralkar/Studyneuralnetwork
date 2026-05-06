@@ -3319,15 +3319,6 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
   const lastTabHiddenRef       = useRef(false);
   const rescueToastTimerRef    = useRef(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
-  const [resonanceLevelForSanctum, setResonanceLevelForSanctum] = useState( () => JSON.parse(localStorage.getItem('resonanceLevel') || '0') );
-  const sanctum = useSanctumState(resonanceLevelForSanctum);
-  const [ghostPingCount, setGhostPingCount] = useState(() => {
-  try {
-    const saved = JSON.parse(localStorage.getItem('ghost_ping_day') || 'null');
-    if (saved?.day === new Date().toDateString()) return saved.count;
-  } catch {}
-  return 0;
-});
   const [showMorningIntro, setShowMorningIntro] = useState(true);
   const [showDailyReward,  setShowDailyReward]  = useState(false);
   const day2RewardShownRef = useRef(false);
@@ -3945,7 +3936,7 @@ LS.remove(`time_spent_${task.id}`);
 if (systemTheme === 'god') fireGodModeConfetti();
 else if (isInPowerHour) firePowerHourConfetti();
 else fireConfetti(task.diff);
-
+};
   // ── COMPUTED ALARM/GLITCH STATE ─────────────────────────────────
   const alarmIsActive    = storyStarted && systemIntegrity < ALARM_INTEGRITY_THRESHOLD && !timerIsRunning;
   const vignetteIsActive = alarmIsActive && systemIntegrity < VIGNETTE_INTEGRITY_THRESHOLD;
