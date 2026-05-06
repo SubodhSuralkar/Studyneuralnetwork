@@ -14,7 +14,8 @@ import {
 import NeuralDestinyGacha, { GachaStatusIcon } from './NeuralDestinyGacha';
 import ResonanceSiege, { useBossModeTheme } from './ResonanceSiege';
 
-import MemoryFragmentModal, { EchoMarquee, playEchoPacket, } from './MemoryFragmentModal';
+import MemoryFragmentModal, { EchoMarquee, playEchoPacket, playChapterCompletion, stopCompletionAudio, } from './MemoryFragmentModal';
+import NeuralSanctum, { useSanctumState, GhostCamOverlay, EchoDailyLog, MemoryCanvas, BreakStasisPanel, } from './NeuralSanctum';
 import ECHO_NARRATIVE, { getChapterIndexFromKey, getNarrativeByChapter, } from './narrativeContent';
 
 // ═══════════════════════════════════════════════════════════════════
@@ -2795,15 +2796,6 @@ const NARRATIVE_CSS = `
   .victory-ring { animation:victory-ring 1.2s ease-out 3; }
 `;
 
-function playChapterCompleteStingAudio() {
-  if (!isAudioUnlocked()) return; // browser block guard
-  try {
-    const audio = new Audio('/chapter-complete.mp3');
-    audio.volume = 0.65;
-    audio.play().catch(() => {});
-  } catch {}
-}
-
 function playVictoryOSTSafe() {
   if (!isAudioUnlocked()) return;
   playVictoryOST();
@@ -3198,6 +3190,29 @@ export default function App() {
       setIsAppInstalled(true);
     }
   };
+
+  // Resonance level bridge (reads from localStorage set by ResonanceSiege)
+const [resonanceLevelForSanctum, setResonanceLevelForSanctum] = useState(
+() => JSON.parse(localStorage.getItem('resonanceLevel') || '0')
+);
+// Poll every 5s — bridge between ResonanceSiege and NeuralSanctum
+useEffect(() => {
+const id = setInterval(() => {
+const v = JSON.parse(localStorage.getItem('resonanceLevel') || '0');
+setResonanceLevelForSanctum(v);
+}, 5_000);
+return () => clearInterval(id);
+}, []);
+// Sanctum hook — MUST be at top level (Rules of Hooks)
+const sanctum = useSanctumState(resonanceLevelForSanctum);
+// Ghost ping count for daily log
+const [ghostPingCount, setGhostPingCount] = useState(() => {
+try {
+const saved = JSON.parse(localStorage.getItem('ghost_ping_day') || 'null');
+if (saved?.day === new Date().toDateString()) return saved.count;
+} catch {}
+return 0;
+});
 
   // ── BOOT SEQUENCE STATE ─────────────────────────────────────────
   const [showBoot,    setShowBoot]    = useState(false);
@@ -3827,116 +3842,94 @@ const fireRescueToast = useCallback(() => {
   }, []);
   
   // ── ANNIHILATE MISSION ──────────────────────────────────────────
-  const handleAnnihilate = (task, comboLevel, velocityMultiplier) => {
-    const chapterKey = `${task.subject}::${task.name}`;
-    setMissions((prev) => prev.filter((m) => m.id !== task.id));
+// STEP 1: Audio — only chapter_completion.mp3, acts as modal OST
+playChapterCompletion();
 
-    if (!task.isMicro && !completedChapters.includes(chapterKey)) {
-      setCompletedChapters((prev) => [...prev, chapterKey]);
-    }
+// STEP 2: Update completed chapters state
+const chapterKey = `${task.subject}::${task.name}`;
+setMissions((prev) => prev.filter((m) => m.id !== task.id));
+if (!task.isMicro && !completedChapters.includes(chapterKey)) {
+  setCompletedChapters((prev) => [...prev, chapterKey]);
+}
 
-    const baseXP      = XP_MAP[task.diff] || 150;
-    const hadVelocity = comboLevel > 0;
-    const powerBonus  = isInPowerHour ? POWER_HOUR_MULTIPLIER : 1;
-    const godBonus    = systemTheme === 'god' ? 1.25 : 1;
-    const xpEarned    = Math.round((hadVelocity ? baseXP * velocityMultiplier : baseXP) * powerBonus * godBonus);
+// STEP 3: XP calculations
+const baseXP      = XP_MAP[task.diff] || 150;
+const hadVelocity = comboLevel > 0;
+const powerBonus  = isInPowerHour ? POWER_HOUR_MULTIPLIER : 1;
+const godBonus    = systemTheme === 'god' ? 1.25 : 1;
+const xpEarned    = Math.round(
+  (hadVelocity ? baseXP * velocityMultiplier : baseXP) * powerBonus * godBonus
+);
 
-    setTotalXP((prev) => prev + xpEarned);
-    setXpFloatData({ xpAmount: xpEarned, hasVelocityBonus: hadVelocity, isPowerHour: isInPowerHour, id: Date.now() });
+setTotalXP((prev) => prev + xpEarned);
+setXpFloatData({ xpAmount: xpEarned, hasVelocityBonus: hadVelocity, isPowerHour: isInPowerHour, id: Date.now() });
 
-    if (!task.isMicro) {
-      const statKey = SUBJECT_CONFIG[task.subject]?.stat;
-      if (statKey) {
-        setRpgStats((prev) => ({ ...prev, [statKey]: (prev[statKey] || 0) + xpEarned }));
-      }
+if (!task.isMicro) {
+  const statKey = SUBJECT_CONFIG[task.subject]?.stat;
+  if (statKey) setRpgStats((prev) => ({ ...prev, [statKey]: (prev[statKey] || 0) + xpEarned }));
 
-      const pyqsSolved = LS.get(`solved_${task.id}`, 0);
-      if (pyqsSolved > 0) {
-        setDailyPyqsSolved((prev) => prev + pyqsSolved);
-      }
+  const pyqsSolved = LS.get(`solved_${task.id}`, 0);
+  if (pyqsSolved > 0) setDailyPyqsSolved((prev) => prev + pyqsSolved);
 
-      const timeSpentSeconds = LS.get(`time_spent_${task.id}`, 0);
-      const archiveEntry = {
-        id: task.id, chapterName: task.name, subject: task.subject,
-        difficulty: task.diff, finalPyqCount: pyqsSolved,
-        timeSpentMinutes: Math.round(timeSpentSeconds / 60),
-        xpEarned, hadVelocityBonus: hadVelocity, hadPowerHour: isInPowerHour,
-        completedAt: Date.now(),
-        completedDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
-        completedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
-      };
-      const existing = LS.get('WAR_ARCHIVES', []);
-      LS.set('WAR_ARCHIVES', [archiveEntry, ...existing]);
-      setWarArchives((prev) => [archiveEntry, ...prev]);
-
-      const nowMs = Date.now();
-      const memoryNode = {
-        id:          `${task.id}_node`,
-        chapterName: task.name,
-        subject:     task.subject,
-        completedAt: nowMs,
-        milestones:  { d1: null, d3: null, d7: null },
-      };
-      setRevisions((prev) => [memoryNode, ...prev]);
-
-      // ▼ PROJECT ECHO ─────────────────────────────────────────
-      playEchoPacket(audioUnlocked);
-      const chapterIndex = getChapterIndexFromKey(chapterKey, SYLLABUS_FLAT);
-      if (chapterIndex !== null) {
-        const narrativeEntry = getNarrativeByChapter(chapterIndex);
-        if (narrativeEntry) {
-          if (!lastTabHiddenRef.current) {
-            consecutiveChaptersRef.current += 1;
-          } else {
-            consecutiveChaptersRef.current = 1;
-            lastTabHiddenRef.current = false;
-          }
-          if (consecutiveChaptersRef.current >= 2) fireRescueToast();
-          const prevSeen = LS.get('echo_fragment_seen', 0);
-          if (chapterIndex > prevSeen) {
-            LS.set('echo_fragment_seen', chapterIndex);
-            setEchoFragmentSeen(chapterIndex);
-            setEchoLatestNarrative(narrativeEntry);
-          }
-          setTimeout(() => setEchoModalNarrative(narrativeEntry), 800);
-        }
-      }
-      // ▲ PROJECT ECHO ─────────────────────────────────────────
-      
-    }
-
-    if (timerTaskId === task.id) {
-      handleAbortTimer();
-      setTimerTaskId(null);
-      setModalOpen(false);
-    }
-
-    LS.remove(`timer_${task.id}`);
-    LS.remove(`solved_${task.id}`);
-    LS.remove(`time_spent_${task.id}`);
-
-   playChapterCompleteStingAudio();
-
-    if (systemTheme === 'god') {
-      fireGodModeConfetti();
-    } else if (isInPowerHour) {
-      firePowerHourConfetti();
-    } else {
-      fireConfetti(task.diff);
-    }
+  const timeSpentSeconds = LS.get(`time_spent_${task.id}`, 0);
+  const archiveEntry = {
+    id: task.id, chapterName: task.name, subject: task.subject,
+    difficulty: task.diff, finalPyqCount: pyqsSolved,
+    timeSpentMinutes: Math.round(timeSpentSeconds / 60),
+    xpEarned, hadVelocityBonus: hadVelocity, hadPowerHour: isInPowerHour,
+    completedAt: Date.now(),
+    completedDate: new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }),
+    completedTime: new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
   };
+  const existing = LS.get('WAR_ARCHIVES', []);
+  LS.set('WAR_ARCHIVES', [archiveEntry, ...existing]);
+  setWarArchives((prev) => [archiveEntry, ...prev]);
 
-  const handleDeleteMission = (taskId) => {
-    setMissions((prev) => prev.filter((m) => m.id !== taskId));
-    if (timerTaskId === taskId) {
-      handleAbortTimer();
-      setTimerTaskId(null);
-      setModalOpen(false);
+  const nowMs = Date.now();
+  setRevisions((prev) => [{
+    id: `${task.id}_node`, chapterName: task.name, subject: task.subject,
+    completedAt: nowMs, milestones: { d1: null, d3: null, d7: null },
+  }, ...prev]);
+
+  // STEP 4: Open MemoryFragmentModal (typewriter starts inside)
+  const chapterIndex   = getChapterIndexFromKey(chapterKey, SYLLABUS_FLAT);
+  if (chapterIndex !== null) {
+    const narrativeEntry = getNarrativeByChapter(chapterIndex);
+    if (narrativeEntry) {
+      if (!lastTabHiddenRef.current) {
+        consecutiveChaptersRef.current += 1;
+      } else {
+        consecutiveChaptersRef.current = 1;
+        lastTabHiddenRef.current = false;
+      }
+      if (consecutiveChaptersRef.current >= 2) fireRescueToast();
+
+      const prevSeen = LS.get('echo_fragment_seen', 0);
+      if (chapterIndex > prevSeen) {
+        LS.set('echo_fragment_seen', chapterIndex);
+        setEchoFragmentSeen(chapterIndex);
+        setEchoLatestNarrative(narrativeEntry);
+      }
+      // Delay so XP float renders first
+      setTimeout(() => setEchoModalNarrative(narrativeEntry), 600);
     }
-    LS.remove(`timer_${taskId}`);
-    LS.remove(`solved_${taskId}`);
-    LS.remove(`time_spent_${taskId}`);
-  };
+  }
+}
+
+// STEP 5: Timer cleanup
+if (timerTaskId === task.id) {
+  handleAbortTimer();
+  setTimerTaskId(null);
+  setModalOpen(false);
+}
+LS.remove(`timer_${task.id}`);
+LS.remove(`solved_${task.id}`);
+LS.remove(`time_spent_${task.id}`);
+
+// STEP 6: Confetti (no audio here — already fired above)
+if (systemTheme === 'god') fireGodModeConfetti();
+else if (isInPowerHour) firePowerHourConfetti();
+else fireConfetti(task.diff);
 
   // ── COMPUTED ALARM/GLITCH STATE ─────────────────────────────────
   const alarmIsActive    = storyStarted && systemIntegrity < ALARM_INTEGRITY_THRESHOLD && !timerIsRunning;
