@@ -4050,6 +4050,8 @@ else fireConfetti(task.diff);
   setRpgStats={setRpgStats}
   isBossMode={isBossMode}
 />
+           <NeuralSanctum sanctum={sanctum} resonanceLevel={resonanceLevelForSanctum} />
+<GhostCamOverlay />
            
             {/* Hidden print zone */}
             <div id="archive-report" style={{ display: 'none' }}>
@@ -4123,11 +4125,14 @@ else fireConfetti(task.diff);
             <AnimatePresence>
               {echoModalNarrative && (
                 <MemoryFragmentModal
-                  narrative={echoModalNarrative}
-                  audioUnlocked={audioUnlocked}
-                  isFinale={echoModalNarrative.chapter === 21}
-                  onClose={() => setEchoModalNarrative(null)}
-                />
+  narrative={echoModalNarrative}
+  audioUnlocked={audioUnlocked}
+  isFinale={echoModalNarrative.chapter === 21}
+  onClose={() => {
+    stopCompletionAudio(2000);
+    setEchoModalNarrative(null);
+  }}
+/>
               )}
             </AnimatePresence>
             
@@ -4628,6 +4633,30 @@ else fireConfetti(task.diff);
                 </div>
               </section>
 
+{/* NEURAL SANCTUM: BREAK + STASIS */}
+<BreakStasisPanel sanctum={sanctum} />
+
+{/* SHARED VISION DECRYPTION */}
+<MemoryCanvas decryptionPct={sanctum.decryptionPct} />
+
+{/* ECHO DAILY LOG */}
+<section style={{ opacity: timerIsRunning ? 0.45 : 1, transition: 'opacity 0.4s' }}>
+  <div className="flex items-center gap-3 mb-4">
+    <div className="h-px flex-1" style={{ background: 'linear-gradient(90deg, #00f5ff, transparent)' }} />
+    <span className="font-mono text-xs tracking-widest"
+      style={{ color: '#00f5ff', textShadow: '0 0 8px #00f5ff' }}>
+      ◈ ECHO DAILY LOG — EOD DEBRIEF
+    </span>
+    <div className="h-px flex-1" style={{ background: 'linear-gradient(270deg, #00f5ff, transparent)' }} />
+  </div>
+  <EchoDailyLog
+    warArchives={warArchives}
+    completedChapters={completedChapters}
+    sanctumState={sanctum.sanctumState}
+    pingCount={ghostPingCount}
+  />
+</section>
+              
               {/* SECTION 4: TEMPORAL WAR-MAP */}
               <TemporalWarMap
                 warStartDate={warStartDate}
