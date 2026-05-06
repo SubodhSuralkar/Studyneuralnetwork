@@ -1,6 +1,29 @@
 /**
  * ═══════════════════════════════════════════════════════════════════
  * RESONANCE SIEGE — THE 4-PILLAR FOCUS SYSTEM
+ * Drop this file alongside App.jsx and import it in.
+ * ═══════════════════════════════════════════════════════════════════
+ *
+ * USAGE in App.jsx:
+ *
+ *   import ResonanceSiege, { useBossModeTheme } from './ResonanceSiege';
+ *
+ *   // Inside App(), near other state:
+ *   const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length);
+ *
+ *   // Inside JSX, just before </> closing fragment or as first child of motion.div:
+ *   <ResonanceSiege
+ *     activeMission={missions[0] || null}
+ *     completedCount={completedChapters.length}
+ *     audioUnlocked={audioUnlocked}
+ *     rpgStats={rpgStats}
+ *     setRpgStats={setRpgStats}
+ *     isBossMode={isBossMode}
+ *   />
+ *
+ *   // Wrap the main motion.div style with bossThemeStyle spread:
+ *   style={{ background: bgStyle, color: '#e0f0ff', ...bossThemeStyle }}
+ *
  * ═══════════════════════════════════════════════════════════════════
  */
 
