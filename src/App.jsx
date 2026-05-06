@@ -3319,6 +3319,15 @@ const { isBossMode, bossThemeStyle } = useBossModeTheme(completedChapters.length
   const lastTabHiddenRef       = useRef(false);
   const rescueToastTimerRef    = useRef(null);
   const [audioUnlocked, setAudioUnlocked] = useState(false);
+  const [resonanceLevelForSanctum, setResonanceLevelForSanctum] = useState( () => JSON.parse(localStorage.getItem('resonanceLevel') || '0') );
+  const sanctum = useSanctumState(resonanceLevelForSanctum);
+  const [ghostPingCount, setGhostPingCount] = useState(() => {
+  try {
+    const saved = JSON.parse(localStorage.getItem('ghost_ping_day') || 'null');
+    if (saved?.day === new Date().toDateString()) return saved.count;
+  } catch {}
+  return 0;
+});
   const [showMorningIntro, setShowMorningIntro] = useState(true);
   const [showDailyReward,  setShowDailyReward]  = useState(false);
   const day2RewardShownRef = useRef(false);
@@ -3371,6 +3380,11 @@ useEffect(() => {
   useEffect(() => { LS.set('ptimer_sessions',     timerCompletedSessions); }, [timerCompletedSessions]);
   useEffect(() => { LS.set('ptimer_taskId',       timerTaskId);       }, [timerTaskId]);
   useEffect(() => { LS.set('echo_fragment_seen', echoFragmentSeen); }, [echoFragmentSeen]);
+  useEffect(() => { const id = setInterval(() => { const v = JSON.parse(localStorage.getItem('resonanceLevel') || '0');
+  setResonanceLevelForSanctum(v);
+  }, 5_000);
+  return () => clearInterval(id);
+}, []);
   useEffect(() => { LS.set('power_hour_end',      powerHourEnd);      }, [powerHourEnd]);
   useEffect(() => { LS.set('war_start_date',      warStartDate);      }, [warStartDate]);
   useEffect(() => {
@@ -3842,6 +3856,7 @@ const fireRescueToast = useCallback(() => {
   }, []);
   
   // ── ANNIHILATE MISSION ──────────────────────────────────────────
+  const handleAnnihilate = (task, comboLevel, velocityMultiplier) => {
 // STEP 1: Audio — only chapter_completion.mp3, acts as modal OST
 playChapterCompletion();
 
