@@ -125,8 +125,8 @@ const COMBO_MULTIPLIERS  = [1, 2, 5, 10, 20, 50];
 // ── INTEGRITY DECAY ─────────────────────────────────────────────────
 // Passive decay: 5% per hour of inactivity.
 // Implemented as a per-minute tick so the rate is always accurate.
-const INTEGRITY_DECAY_PER_HOUR   = 5;                                 // %/hr
-const INTEGRITY_DECAY_PER_MINUTE = INTEGRITY_DECAY_PER_HOUR / 60;    // ≈ 0.0833 %/min
+const INTEGRITY_DECAY_PER_HOUR   = 6;                                 // %/hr
+const INTEGRITY_DECAY_PER_MINUTE = INTEGRITY_DECAY_PER_HOUR / 60;    // ≈ 0.1 %/min
 const INTEGRITY_RESTORE_AMOUNT   = 20;                                // restored when timer starts
 
 // ── NEURAL ALARM THRESHOLD ──────────────────────────────────────────
@@ -164,11 +164,11 @@ const SUBJECT_PRINT_COLORS = {
 const RANK_THRESHOLDS = [
   { rank: 'CADET',       min: 0,      max: 50000   },
   { rank: 'RECRUIT',     min: 50000,   max: 70000  },
-  { rank: 'SPECIALIST',  min: 100000,  max: 150000  },
-  { rank: 'OPERATIVE',   min: 150000,  max: 200000  },
-  { rank: 'COMMANDER',   min: 200000,  max: 320000  },
-  { rank: 'WARLORD',     min: 320000,  max: 420000 },
-  { rank: 'NEXUS ELITE', min: 420000,  max: 500000 },
+  { rank: 'SPECIALIST',  min: 100000,  max: 130000  },
+  { rank: 'OPERATIVE',   min: 130000,  max: 150000  },
+  { rank: 'COMMANDER',   min: 150000,  max: 170000  },
+  { rank: 'WARLORD',     min: 200000,  max:220000 },
+  { rank: 'NEXUS ELITE', min: 220000,  max: 250000 },
 ];
 
 const TIMER_PRESETS = [
@@ -179,9 +179,9 @@ const TIMER_PRESETS = [
 
 const LEVEL_THRESHOLDS = [
   0, 20000, 50000, 70000, 100000,
-  150000, 170000, 200000, 220000, 250000,
-  270000, 280000, 300000, 320000, 350000,
-  400000, 420000, 450000, 470000, 500000,
+  110000, 130000, 140000, 150000, 160000,
+  170000, 180000, 190000, 200000, 210000,
+220000, 230000, 240000, 250000, 260000,
 ];
 
 // ── CAMPAIGN DATE SYSTEM ─────────────────────────────────────────────
@@ -344,8 +344,8 @@ function getLevelProgress(xp) {
 }
 
 function getSystemTheme(level) {
-  if (level >= 15) return 'god';
-  if (level >= 8) return 'neon';
+  if (level >= 8) return 'god';
+  if (level >= 5) return 'neon';
   return 'dim';
 }
 
